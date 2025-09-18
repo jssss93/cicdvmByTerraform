@@ -85,6 +85,11 @@ linux_vm_image_sku = "server"
 linux_vm_image_version = "latest"
 
 # ========================================
+# Azure CLI 및 도구 설치 설정
+# ========================================
+install_azure_cli = true  # VM 생성 시 Azure CLI, .NET SDK, Docker 자동 설치
+
+# ========================================
 # 관리 ID 설정
 # ========================================
 enable_managed_identity = true

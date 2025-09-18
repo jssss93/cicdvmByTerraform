@@ -154,18 +154,13 @@ resource "azurerm_windows_virtual_machine" "main" {
     disk_size_gb         = var.os_disk_size_gb
   }
 
-  # 갤러리 이미지 사용 또는 마켓플레이스 이미지 사용
-  dynamic "source_image_reference" {
-    for_each = var.use_gallery_images ? [] : [1]
-    content {
-      publisher = var.windows_image_publisher
-      offer     = var.windows_image_offer
-      sku       = var.windows_image_sku
-      version   = var.windows_image_version
-    }
+  # 마켓플레이스 이미지 사용
+  source_image_reference {
+    publisher = var.windows_image_publisher
+    offer     = var.windows_image_offer
+    sku       = var.windows_image_sku
+    version   = var.windows_image_version
   }
-
-  source_image_id = var.use_gallery_images ? var.windows_gallery_image_id : null
 
   # 부팅 진단
   dynamic "boot_diagnostics" {
@@ -224,18 +219,13 @@ resource "azurerm_linux_virtual_machine" "main" {
     disk_size_gb         = var.os_disk_size_gb
   }
 
-  # 갤러리 이미지 사용 또는 마켓플레이스 이미지 사용
-  dynamic "source_image_reference" {
-    for_each = var.use_gallery_images ? [] : [1]
-    content {
-      publisher = var.linux_image_publisher
-      offer     = var.linux_image_offer
-      sku       = var.linux_image_sku
-      version   = var.linux_image_version
-    }
+  # 마켓플레이스 이미지 사용
+  source_image_reference {
+    publisher = var.linux_image_publisher
+    offer     = var.linux_image_offer
+    sku       = var.linux_image_sku
+    version   = var.linux_image_version
   }
-
-  source_image_id = var.use_gallery_images ? var.linux_gallery_image_id : null
 
   # 부팅 진단
   dynamic "boot_diagnostics" {

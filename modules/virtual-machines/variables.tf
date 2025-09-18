@@ -220,23 +220,6 @@ variable "public_ip_sku" {
 }
 
 # 이미지 설정
-variable "use_gallery_images" {
-  description = "갤러리 이미지 사용 여부"
-  type        = bool
-  default     = false
-}
-
-variable "windows_gallery_image_id" {
-  description = "Windows 갤러리 이미지 ID"
-  type        = string
-  default     = null
-}
-
-variable "linux_gallery_image_id" {
-  description = "Linux 갤러리 이미지 ID"
-  type        = string
-  default     = null
-}
 
 # 마켓플레이스 이미지 설정 (완전 변수화)
 variable "windows_image_publisher" {
