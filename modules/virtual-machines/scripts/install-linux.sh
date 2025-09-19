@@ -63,17 +63,17 @@ log "시스템 서비스 설정 중..."
 systemctl enable docker
 systemctl start docker
 
-# 사용자 정의 스크립트 실행
-CUSTOM_SCRIPT="${custom_script}"
-if [ ! -z "$CUSTOM_SCRIPT" ] && [ "$CUSTOM_SCRIPT" != "" ]; then
-    log "사용자 정의 스크립트 실행 중..."
-    eval "$CUSTOM_SCRIPT" 2>&1 | tee -a "$LOG_FILE"
-    if [ $? -eq 0 ]; then
-        log "사용자 정의 스크립트 실행 완료"
-    else
-        log "사용자 정의 스크립트 실행 오류"
-    fi
-fi
+# 추가 사용자 정의 스크립트 실행 (필요시)
+# CUSTOM_SCRIPT="${custom_script}"
+# if [ ! -z "$CUSTOM_SCRIPT" ] && [ "$CUSTOM_SCRIPT" != "" ]; then
+#     log "사용자 정의 스크립트 실행 중..."
+#     eval "$CUSTOM_SCRIPT" 2>&1 | tee -a "$LOG_FILE"
+#     if [ $? -eq 0 ]; then
+#         log "사용자 정의 스크립트 실행 완료"
+#     else
+#         log "사용자 정의 스크립트 실행 오류"
+#     fi
+# fi
 
 # 정리 작업
 log "정리 작업 중..."

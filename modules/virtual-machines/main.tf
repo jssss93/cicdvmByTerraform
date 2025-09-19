@@ -336,7 +336,8 @@ resource "azurerm_virtual_machine_extension" "linux_extensions" {
   tags = var.tags
 }
 
-# Linux VM Custom Script Extension (Base64 인코딩 방식)
+# Linux VM Custom Script Extension (Base64 인코딩 방식) 
+# /var/lib/waagent/custom-script/download/0/ 에 저장
 resource "azurerm_virtual_machine_extension" "linux_custom_script" {
   count                = var.create_linux_vm && var.custom_script_linux != "" ? 1 : 0
   name                 = "custom-script-linux"
