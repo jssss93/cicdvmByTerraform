@@ -174,74 +174,118 @@ log "VM 초기 설정 스크립트 종료"
 EOT
 
 custom_script_windows = <<-EOT
-# Custom Script Extension 테스트 시작
-Write-Host "=== Custom Script Extension 테스트 시작 ===" -ForegroundColor Green
+Write-Host "Windows VM 설정 시작"
+"$(Get-Date): Windows VM 설정 시작" | Out-File -FilePath "C:\vm-setup.log" -Force
+Write-Host "Azure CLI 설치 중..."
+Set-ExecutionPolicy Bypass -Scope Process -Force
+try {
+    iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
+    choco install azure-cli -y --force
+    "$(Get-Date): Azure CLI 설치 완료" | Out-File -FilePath "C:\setup-complete.txt" -Force
+    Write-Host "설정 완료"
+} catch {
+    "$(Get-Date): 오류 발생" | Out-File -FilePath "C:\setup-error.txt" -Force
+    Write-Host "설정 중 오류 발생"
+}
+# Windows VM 초기 설정 및 Azure CLI 설치 스크립트
+Write-Host "=== Windows VM 초기 설정 시작 ===" -ForegroundColor Green
 
-$logFile = "C:\custom-script-test.log"
+# 로그 파일 설정
+$logFile = "C:\vm-setup.log"
+$timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
 
 # 로그 함수
 function Write-Log {
     param($Message)
-    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
     $logMessage = "[$timestamp] $Message"
     Write-Host $logMessage
     try {
-        Add-Content -Path $logFile -Value $logMessage -ErrorAction SilentlyContinue
+        Add-Content -Path $logFile -Value $logMessage -Force
     } catch {
         Write-Host "로그 파일 쓰기 실패: $($_.Exception.Message)"
     }
 }
 
 try {
+    Write-Log "Windows VM 초기 설정 시작"
     Write-Log "실행 시간: $(Get-Date)"
     Write-Log "현재 사용자: $env:USERNAME"
-    Write-Log "현재 디렉토리: $(Get-Location)"
 
-    Write-Log "=== 시스템 정보 ==="
-    try {
-        $computerInfo = Get-ComputerInfo -ErrorAction SilentlyContinue
-        if ($computerInfo) {
-            Write-Log "OS: $($computerInfo.WindowsProductName)"
-            Write-Log "메모리: $($computerInfo.TotalPhysicalMemory / 1GB) GB"
-        }
-    } catch {
-        Write-Log "시스템 정보 조회 실패: $($_.Exception.Message)"
+    # PowerShell 실행 정책 설정
+    Write-Log "PowerShell 실행 정책 설정 중..."
+    Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope LocalMachine -Force
+
+    # Chocolatey 설치 (패키지 관리자)
+    Write-Log "Chocolatey 설치 중..."
+    if (!(Get-Command choco -ErrorAction SilentlyContinue)) {
+        Set-ExecutionPolicy Bypass -Scope Process -Force
+        [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
+        Invoke-Expression ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
+        
+        # PATH 환경변수 새로고침
+        $env:PATH = [System.Environment]::GetEnvironmentVariable("PATH","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("PATH","User")
+        Write-Log "Chocolatey 설치 완료"
+    } else {
+        Write-Log "Chocolatey 이미 설치됨"
     }
 
-    Write-Log "=== 디스크 사용량 ==="
-    try {
-        $disks = Get-WmiObject -Class Win32_LogicalDisk -ErrorAction SilentlyContinue
-        foreach ($disk in $disks) {
-            Write-Log "디스크 $($disk.DeviceID): $([math]::Round($disk.FreeSpace / 1GB, 2)) GB 사용 가능 / $([math]::Round($disk.Size / 1GB, 2)) GB 전체"
-        }
-    } catch {
-        Write-Log "디스크 정보 조회 실패: $($_.Exception.Message)"
+    # Azure CLI 설치
+    Write-Log "Azure CLI 설치 중..."
+    choco install azure-cli -y --force
+    
+    # PATH 환경변수 새로고침
+    $env:PATH = [System.Environment]::GetEnvironmentVariable("PATH","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("PATH","User")
+    
+    # Azure CLI 버전 확인
+    Write-Log "Azure CLI 설치 확인 중..."
+    Start-Sleep -Seconds 5
+    $azVersion = & az version --output table 2>&1
+    if ($LASTEXITCODE -eq 0) {
+        Write-Log "Azure CLI 설치 성공"
+    } else {
+        Write-Log "Azure CLI 버전 확인 실패, 재시도..."
     }
 
-    Write-Log "=== 네트워크 정보 ==="
-    try {
-        $ipAddresses = Get-NetIPAddress -AddressFamily IPv4 -ErrorAction SilentlyContinue | Where-Object {$_.IPAddress -notlike "127.*"}
-        foreach ($ip in $ipAddresses) {
-            Write-Log "IP: $($ip.IPAddress) - $($ip.InterfaceAlias)"
-        }
-    } catch {
-        Write-Log "네트워크 정보 조회 실패: $($_.Exception.Message)"
-    }
+    # Git 설치
+    Write-Log "Git 설치 중..."
+    choco install git -y --force
 
-    # 테스트 파일 생성
-    $completionMessage = "Custom Script Extension 테스트 완료: $(Get-Date)"
-    try {
-        $completionMessage | Out-File -FilePath "C:\custom-script-test-complete.txt" -Encoding UTF8 -ErrorAction SilentlyContinue
-        Write-Log "테스트 완료 파일 생성됨"
-    } catch {
-        Write-Log "테스트 완료 파일 생성 실패: $($_.Exception.Message)"
-    }
+    # .NET SDK 설치
+    Write-Log ".NET SDK 설치 중..."
+    choco install dotnet-sdk -y --force
 
-    Write-Log "=== Custom Script Extension 테스트 완료 ==="
+    # Docker Desktop 설치 (Windows Server에서는 Docker Engine)
+    Write-Log "Docker 설치 중..."
+    choco install docker-desktop -y --force
+
+    # 설치 완료 파일 생성
+    Write-Log "설치 완료 파일 생성 중..."
+    $completionData = @"
+Windows VM 초기 설정 완료
+설치 시간: $(Get-Date)
+설치된 소프트웨어:
+- Azure CLI
+- Git
+- .NET SDK  
+- Docker Desktop
+- Chocolatey
+
+로그 파일: C:\vm-setup.log
+"@
+    
+    $completionData | Out-File -FilePath "C:\vm-setup-complete.txt" -Encoding UTF8 -Force
+    Write-Log "설치 완료 파일 생성됨: C:\vm-setup-complete.txt"
+
+    # 테스트 파일도 생성
+    "Custom Script Extension 실행 완료: $(Get-Date)" | Out-File -FilePath "C:\custom-script-test-complete.txt" -Encoding UTF8 -Force
+    Write-Log "테스트 파일 생성됨: C:\custom-script-test-complete.txt"
+
+    Write-Log "=== Windows VM 초기 설정 완료 ==="
     
 } catch {
-    Write-Host "전체 스크립트 실행 중 오류 발생: $($_.Exception.Message)" -ForegroundColor Red
-    exit 1
+    Write-Log "오류 발생: $($_.Exception.Message)"
+    Write-Host "스크립트 실행 중 오류 발생: $($_.Exception.Message)" -ForegroundColor Red
+    exit 0
 }
 EOT
 

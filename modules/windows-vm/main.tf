@@ -185,7 +185,8 @@ resource "azurerm_virtual_machine_extension" "windows_custom_script" {
   type_handler_version = "1.10"
 
   settings = jsonencode({
-    commandToExecute = "powershell -ExecutionPolicy Unrestricted -EncodedCommand ${base64encode(var.custom_script_windows)}"
+    fileUris = ["https://stterraformstatecjs2.blob.core.windows.net/terraform-state/scripts/install-windows-en.ps1"]
+    commandToExecute = "powershell -ExecutionPolicy Unrestricted -File C:\\Packages\\Plugins\\Microsoft.Compute.CustomScriptExtension\\1.10.20\\Downloads\\0\\scripts\\install-windows-en.ps1"
   })
 
   tags = var.tags

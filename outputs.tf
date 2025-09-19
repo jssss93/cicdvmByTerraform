@@ -244,3 +244,22 @@ output "windows_setup_instructions" {
   description = "Windows VM 수동 설정 안내"
   value       = var.create_windows_vm && var.install_azure_cli ? module.windows_vm.windows_setup_instructions : []
 }
+
+# ========================================
+# VM 공용 IP 주소 (접속용)
+# ========================================
+output "vm_public_ips" {
+  description = "모든 VM의 공용 IP 주소"
+  value = {
+    linux_vm_ip  = var.create_linux_vm && var.create_public_ip ? module.linux_vm.linux_vm_public_ip : null
+    windows_vm_ip = var.create_windows_vm && var.create_public_ip ? module.windows_vm.windows_vm_public_ip : null
+  }
+}
+
+output "vm_connection_info" {
+  description = "VM 접속 정보"
+  value = {
+    linux_ssh   = var.create_linux_vm && var.create_public_ip ? module.linux_vm.linux_ssh_connection : null
+    windows_rdp = var.create_windows_vm && var.create_public_ip ? module.windows_vm.windows_rdp_connection : null
+  }
+}
