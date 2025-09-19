@@ -15,6 +15,10 @@ try {
     Write-Host "Installing Azure CLI..."
     choco install azure-cli -y --force
     
+    # Install .NET 9 SDK
+    Write-Host "Installing .NET 9 SDK..."
+    choco install dotnet-9.0-sdk -y --force
+    
     # Install Docker Engine
     Write-Host "Installing Docker Engine..."
     choco install docker-engine -y --force
@@ -34,11 +38,13 @@ try {
     # Verify installations
     Write-Host "Verifying installations..."
     $azVersion = & az version --output tsv 2>&1
+    $dotnetVersion = & dotnet --version 2>&1
     $dockerVersion = & docker --version 2>&1
     
     $results = @"
 $(Get-Date): Installation completed
 Azure CLI: $($azVersion -split "`n" | Select-Object -First 1)
+.NET 9 SDK: $dotnetVersion
 Docker: $dockerVersion
 "@
     
