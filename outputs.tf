@@ -227,3 +227,9 @@ output "managed_identity_configuration" {
   description = "관리 ID 설정 정보"
   value       = module.virtual_machines.managed_identity_configuration
 }
+
+# Windows VM 설정 안내
+output "windows_setup_instructions" {
+  description = "Windows VM 수동 설정 안내"
+  value       = var.create_windows_vm && var.install_azure_cli ? module.virtual_machines.windows_setup_instructions : []
+}

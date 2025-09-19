@@ -1,0 +1,171 @@
+#cloud-config
+# Linux VM 초기 설정 - Ubuntu 24.04 호환 버전
+# Azure CLI, Docker, Git 및 개발 도구 자동 설치
+
+package_update: true
+package_upgrade: true
+
+# 필수 패키지 설치
+packages:
+  - curl
+  - wget
+  - git
+  - unzip
+  - jq
+  - apt-transport-https
+  - ca-certificates
+  - gnupg
+  - lsb-release
+  - software-properties-common
+
+# 파일 생성
+write_files:
+  - path: /var/log/vm-setup.log
+    content: |
+      [$(date '+%Y-%m-%d %H:%M:%S')] Linux VM 초기 설정 시작 (Cloud-init) - Ubuntu 24.04
+    permissions: '0644'
+  
+  - path: /tmp/install-azure-cli.sh
+    content: |
+      #!/bin/bash
+      # Azure CLI 설치 스크립트 - Ubuntu 24.04 호환
+      
+      LOG_FILE="/var/log/vm-setup.log"
+      log() {
+          echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" | tee -a "$LOG_FILE"
+      }
+      
+      log "Azure CLI 설치 시작"
+      
+      # Microsoft GPG 키 추가 (새로운 방식)
+      curl -sLS https://packages.microsoft.com/keys/microsoft.asc | \
+        gpg --dearmor | \
+        tee /etc/apt/keyrings/microsoft.gpg > /dev/null
+      chmod go+r /etc/apt/keyrings/microsoft.gpg
+      
+      # Ubuntu 버전 확인 및 리포지토리 설정
+      AZ_DIST=$(lsb_release -cs)
+      log "감지된 Ubuntu 버전: $AZ_DIST"
+      
+      # Ubuntu 24.04 (noble)의 경우 jammy 사용
+      if [[ "$AZ_DIST" == "noble" ]]; then
+          log "Ubuntu 24.04 감지됨. jammy 리포지토리 사용"
+          AZ_DIST="jammy"
+      fi
+      
+      # Azure CLI 리포지토리 추가
+      echo "deb [arch=amd64,arm64,armhf signed-by=/etc/apt/keyrings/microsoft.gpg] https://packages.microsoft.com/repos/azure-cli/ $AZ_DIST main" | \
+        tee /etc/apt/sources.list.d/azure-cli.list
+      
+      # 패키지 목록 업데이트 및 Azure CLI 설치
+      apt-get update -y
+      apt-get install -y azure-cli
+      
+      # Azure CLI 설치 확인
+      if command -v az &> /dev/null; then
+          AZ_VERSION=$(az version --output tsv 2>/dev/null | head -n1 | cut -f2)
+          log "Azure CLI 설치 성공: 버전 $AZ_VERSION"
+      else
+          log "Azure CLI 설치 실패"
+          return 1
+      fi
+      
+      log "Azure CLI 설치 완료"
+    permissions: '0755'
+
+  - path: /tmp/install-docker.sh
+    content: |
+      #!/bin/bash
+      # Docker 설치 스크립트 - Ubuntu 24.04 호환
+      
+      LOG_FILE="/var/log/vm-setup.log"
+      log() {
+          echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" | tee -a "$LOG_FILE"
+      }
+      
+      log "Docker 설치 시작"
+      
+      # Docker 공식 설치 스크립트 사용
+      curl -fsSL https://get.docker.com -o get-docker.sh
+      if [ $? -eq 0 ]; then
+          log "Docker 설치 스크립트 다운로드 성공"
+          sh get-docker.sh
+      else
+          log "Docker 설치 스크립트 다운로드 실패"
+          return 1
+      fi
+      
+      # Docker 서비스 활성화
+      systemctl enable docker
+      systemctl start docker
+      
+      # 기본 사용자를 docker 그룹에 추가 (ubuntu 사용자)
+      if id "ubuntu" &>/dev/null; then
+          usermod -aG docker ubuntu
+          log "ubuntu 사용자를 docker 그룹에 추가함"
+      fi
+      
+      # azureuser가 있는 경우도 추가
+      if id "azureuser" &>/dev/null; then
+          usermod -aG docker azureuser
+          log "azureuser를 docker 그룹에 추가함"
+      fi
+      
+      # Docker 설치 확인
+      if command -v docker &> /dev/null; then
+          DOCKER_VERSION=$(docker --version)
+          log "Docker 설치 성공: $DOCKER_VERSION"
+      else
+          log "Docker 설치 실패"
+          return 1
+      fi
+      
+      # Docker Compose 설치
+      COMPOSE_VERSION=$(curl -s https://api.github.com/repos/docker/compose/releases/latest | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
+      curl -L "https://github.com/docker/compose/releases/download/$COMPOSE_VERSION/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+      chmod +x /usr/local/bin/docker-compose
+      log "Docker Compose 설치 완료: $COMPOSE_VERSION"
+      
+      log "Docker 설치 완료"
+    permissions: '0755'
+
+# 시스템 부팅 후 실행할 명령어들
+runcmd:
+  - echo "[$(date '+%Y-%m-%d %H:%M:%S')] Cloud-init runcmd 시작" >> /var/log/vm-setup.log
+  - /tmp/install-azure-cli.sh
+  - /tmp/install-docker.sh
+  - echo "[$(date '+%Y-%m-%d %H:%M:%S')] 추가 패키지 설치 중..." >> /var/log/vm-setup.log
+  # 올바른 패키지명 사용
+  - apt-get install -y htop tree vim nano net-tools build-essential
+  - echo "[$(date '+%Y-%m-%d %H:%M:%S')] 시스템 정리 중..." >> /var/log/vm-setup.log
+  - apt-get autoremove -y
+  - apt-get autoclean
+  
+  # 사용자 정의 스크립트 실행 (조건부)
+  - |
+    if [ ! -z "${custom_script}" ]; then
+      echo "[$(date '+%Y-%m-%d %H:%M:%S')] 사용자 정의 스크립트 실행 시작" >> /var/log/vm-setup.log
+      echo '${custom_script}' > /tmp/user-custom-script.sh
+      chmod +x /tmp/user-custom-script.sh
+      bash /tmp/user-custom-script.sh
+      echo "[$(date '+%Y-%m-%d %H:%M:%S')] 사용자 정의 스크립트 실행 완료" >> /var/log/vm-setup.log
+    fi
+  
+  - echo "[$(date '+%Y-%m-%d %H:%M:%S')] Cloud-init 설정 완료" >> /var/log/vm-setup.log
+  - touch /tmp/vm-setup-complete
+  - echo "VM 초기 설정 완료: $(date)" > /tmp/vm-setup-complete.txt
+
+# 최종 메시지
+final_message: |
+  Ubuntu 24.04 Linux VM 초기 설정이 완료되었습니다.
+  설치된 소프트웨어:
+  - Azure CLI (Ubuntu 24.04 호환)
+  - Docker & Docker Compose
+  - Git 및 개발 도구들
+  
+  로그 파일 확인: sudo cat /var/log/vm-setup.log
+  완료 상태 확인: ls -la /tmp/vm-setup-complete*
+
+# 재부팅 비활성화 (안정성을 위해)
+# power_state:
+#   mode: reboot

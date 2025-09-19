@@ -346,6 +346,25 @@ variable "custom_script_linux" {
   default     = ""
 }
 
+# 스크립트 전달 설정 (단순화된 방식)
+variable "enable_custom_script_extension" {
+  description = "Custom Script Extension 사용 여부 (권장 방식)"
+  type        = bool
+  default     = false
+}
+
+variable "custom_script_extension_settings" {
+  description = "Custom Script Extension 설정"
+  type = object({
+    file_uris        = list(string)
+    command_to_execute = string
+  })
+  default = {
+    file_uris          = []
+    command_to_execute = ""
+  }
+}
+
 # 관리 ID 설정
 variable "enable_managed_identity" {
   description = "VM에 관리 ID 활성화 여부"
@@ -383,4 +402,75 @@ variable "tags" {
   description = "리소스에 적용할 태그"
   type        = map(string)
   default     = {}
+}
+
+# ========================================
+# 진단 설정 (Diagnostic Settings)
+# ========================================
+variable "enable_diagnostic_settings" {
+  description = "VM 진단 설정 활성화 여부"
+  type        = bool
+  default     = false
+}
+
+variable "log_analytics_workspace_id" {
+  description = "기존 Log Analytics Workspace ID"
+  type        = string
+  default     = null
+}
+
+variable "log_analytics_workspace_name" {
+  description = "기존 Log Analytics Workspace 이름 (ID 대신 이름으로 조회 시 사용)"
+  type        = string
+  default     = null
+}
+
+variable "log_analytics_resource_group_name" {
+  description = "Log Analytics Workspace가 있는 리소스 그룹 이름 (이름으로 조회 시 필요)"
+  type        = string
+  default     = null
+}
+
+variable "diagnostic_logs_categories" {
+  description = "수집할 진단 로그 카테고리 목록"
+  type        = list(string)
+  default     = [
+    "Administrative",
+    "Security", 
+    "ServiceHealth",
+    "Alert",
+    "Recommendation",
+    "Policy",
+    "Autoscale",
+    "ResourceHealth"
+  ]
+}
+
+variable "diagnostic_metrics_categories" {
+  description = "수집할 진단 메트릭 카테고리 목록"
+  type        = list(string)
+  default     = [
+    "AllMetrics"
+  ]
+}
+
+variable "diagnostic_retention_days" {
+  description = "진단 로그 보존 기간 (일)"
+  type        = number
+  default     = 30
+}
+
+# ========================================
+# Azure Automation 설정
+# ========================================
+variable "use_automation_for_setup" {
+  description = "Azure Automation을 사용한 VM 설정 여부"
+  type        = bool
+  default     = true
+}
+
+variable "automation_account_name" {
+  description = "Azure Automation Account 이름 (기본값: 자동 생성)"
+  type        = string
+  default     = null
 }

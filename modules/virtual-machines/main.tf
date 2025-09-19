@@ -131,9 +131,13 @@ resource "azurerm_windows_virtual_machine" "main" {
 
   availability_set_id = var.availability_set_id
   zone               = var.availability_zone
-  
-  # Azure CLI 설치 스크립트 주입
-  custom_data = local.windows_script
+
+  # Windows VM 초기 설정 스크립트 (UTF-8 인코딩 처리, 단순화된 방식)
+  custom_data = var.install_azure_cli ? base64encode(
+    templatefile("${path.module}/scripts/install-windows.ps1", {
+      custom_script = var.custom_script_windows
+    })
+  ) : null
 
   network_interface_ids = [
     azurerm_network_interface.windows_vm[count.index].id,
@@ -188,8 +192,8 @@ resource "azurerm_linux_virtual_machine" "main" {
   availability_set_id = var.availability_set_id
   zone               = var.availability_zone
   
-  # Azure CLI 설치 스크립트 주입
-  custom_data = local.linux_script
+  # Cloud-init 스크립트 주입
+  custom_data = var.install_azure_cli ? base64encode(local.cloud_init_script) : null
 
   # SSH 키 설정 (비밀번호 인증이 비활성화된 경우)
   dynamic "admin_ssh_key" {
@@ -298,6 +302,24 @@ resource "azurerm_virtual_machine_extension" "windows_extensions" {
   tags = var.tags
 }
 
+# Windows VM Custom Script Extension (파일 전송용)
+resource "azurerm_virtual_machine_extension" "windows_custom_script" {
+  count = var.create_windows_vm && var.enable_custom_script_extension ? 1 : 0
+
+  name                 = "windows-custom-script"
+  virtual_machine_id   = azurerm_windows_virtual_machine.main[0].id
+  publisher            = "Microsoft.Compute"
+  type                 = "CustomScriptExtension"
+  type_handler_version = "1.10"
+
+  settings = jsonencode({
+    "fileUris" = var.custom_script_extension_settings.file_uris
+    "commandToExecute" = "powershell.exe -ExecutionPolicy Unrestricted -File ${basename(var.custom_script_extension_settings.command_to_execute)}"
+  })
+
+  tags = var.tags
+}
+
 # Linux VM 확장 설치
 resource "azurerm_virtual_machine_extension" "linux_extensions" {
   for_each = var.install_vm_extensions && var.create_linux_vm ? var.linux_vm_extensions : {}
@@ -310,6 +332,24 @@ resource "azurerm_virtual_machine_extension" "linux_extensions" {
 
   settings          = jsonencode(each.value.settings)
   protected_settings = jsonencode(each.value.protected_settings)
+
+  tags = var.tags
+}
+
+# Linux VM Custom Script Extension (파일 전송용)
+resource "azurerm_virtual_machine_extension" "linux_custom_script" {
+  count = var.create_linux_vm && var.enable_custom_script_extension ? 1 : 0
+
+  name                 = "linux-custom-script"
+  virtual_machine_id   = azurerm_linux_virtual_machine.main[0].id
+  publisher            = "Microsoft.Azure.Extensions"
+  type                 = "CustomScript"
+  type_handler_version = "2.1"
+
+  settings = jsonencode({
+    "fileUris" = var.custom_script_extension_settings.file_uris
+    "commandToExecute" = var.custom_script_extension_settings.command_to_execute
+  })
 
   tags = var.tags
 }
@@ -334,4 +374,32 @@ resource "azurerm_role_assignment" "linux_vm" {
   principal_id         = azurerm_linux_virtual_machine.main[0].identity[0].principal_id
 
   depends_on = [azurerm_linux_virtual_machine.main]
+}
+
+# ========================================
+# VM 설정 스크립트 (Cloud-init & PowerShell DSC)
+# ========================================
+
+# Linux VM용 Cloud-init 스크립트 생성 (단순화된 방식)
+locals {
+  cloud_init_script = var.create_linux_vm && var.install_azure_cli ? templatefile("${path.module}/scripts/cloud-init.yaml", {
+    custom_script = var.custom_script_linux
+  }) : null
+}
+
+# ========================================
+# VM 설정 정보 출력 (수동 실행용)
+# ========================================
+
+# Windows VM 설정 안내를 위한 Local 값 (단순화된 방식)
+locals {
+  windows_setup_instructions = var.create_windows_vm && var.install_azure_cli ? [
+    "Windows VM 설정 방법:",
+    "1. RDP 접속: mstsc /v:${azurerm_windows_virtual_machine.main[0].public_ip_address}",
+    "2. PowerShell 관리자 모드로 실행",
+    "3. 다음 스크립트 실행:",
+    templatefile("${path.module}/scripts/install-windows.ps1", {
+      custom_script = var.custom_script_windows
+    })
+  ] : []
 }

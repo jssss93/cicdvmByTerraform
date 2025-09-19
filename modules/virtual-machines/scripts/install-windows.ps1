@@ -1,6 +1,37 @@
+# -*- coding: utf-8 -*-
 # Windows VM 초기 설정 스크립트 (PowerShell)
 # Azure CLI, .NET 9 SDK 및 개발 도구 설치
 # VM 생성 시 자동 실행되는 스크립트
+
+# PowerShell 콘솔 인코딩 설정
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+[Console]::InputEncoding = [System.Text.Encoding]::UTF8
+$OutputEncoding = [System.Text.Encoding]::UTF8
+
+# Windows 레지스트리에서 기본 코드페이지를 UTF-8로 설정
+try {
+    # 시스템 로케일을 UTF-8로 설정
+    Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\Nls\CodePage" -Name "ACP" -Value "65001" -Force
+    Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\Nls\CodePage" -Name "OEMCP" -Value "65001" -Force
+    
+    # PowerShell 프로파일에 인코딩 설정 추가
+    $profilePath = $PROFILE.AllUsersAllHosts
+    $profileDir = Split-Path $profilePath -Parent
+    if (!(Test-Path $profileDir)) {
+        New-Item -Path $profileDir -ItemType Directory -Force
+    }
+    
+    $encodingSettings = @"
+# PowerShell UTF-8 인코딩 설정
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+[Console]::InputEncoding = [System.Text.Encoding]::UTF8
+`$OutputEncoding = [System.Text.Encoding]::UTF8
+"@
+    
+    Add-Content -Path $profilePath -Value $encodingSettings -Force
+} catch {
+    Write-Warning "인코딩 설정 중 오류 발생: $($_.Exception.Message)"
+}
 
 # 로그 파일 설정
 $logFile = "C:\vm-setup.log"
@@ -128,16 +159,31 @@ try {
     Write-Log "스택 트레이스: $($_.ScriptStackTrace)"
 }
 
-# 사용자 정의 스크립트 실행
+# 사용자 정의 스크립트 파일 생성 및 실행
 $customScript = "${custom_script}"
 if ($customScript -and $customScript.Trim() -ne "") {
-    Write-Log "사용자 정의 스크립트 실행 중..."
+    Write-Log "사용자 정의 스크립트 파일 생성 중..."
     try {
-        Invoke-Expression $customScript
+        # 사용자 정의 스크립트를 파일로 저장
+        $scriptPath = "C:\user-custom-script.ps1"
+        Set-Content -Path $scriptPath -Value $customScript -Encoding UTF8
+        Write-Log "사용자 정의 스크립트 파일 생성 완료: $scriptPath"
+        
+        # 스크립트 파일 실행
+        Write-Log "사용자 정의 스크립트 실행 중..."
+        & $scriptPath
         Write-Log "사용자 정의 스크립트 실행 완료"
+        
+        # 실행된 스크립트 파일 정보 기록
+        Write-Log "실행된 스크립트 파일: $scriptPath"
+        Write-Log "스크립트 파일 크기: $((Get-Item $scriptPath).Length) bytes"
+        
     } catch {
         Write-Log "사용자 정의 스크립트 실행 오류: $($_.Exception.Message)"
+        Write-Log "스택 트레이스: $($_.ScriptStackTrace)"
     }
+} else {
+    Write-Log "사용자 정의 스크립트가 설정되지 않음"
 }
 
 Write-Log "모든 설치 작업 완료 - Hyper-V 및 컨테이너 기능 활성화를 위해 재부팅 시작"

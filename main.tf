@@ -138,6 +138,19 @@ module "virtual_machines" {
   managed_identity_type       = var.managed_identity_type
   user_assigned_identity_ids  = var.user_assigned_identity_ids
   role_assignments            = var.role_assignments
+  
+  # 진단 설정
+  enable_diagnostic_settings        = var.enable_diagnostic_settings
+  log_analytics_workspace_id        = var.log_analytics_workspace_id
+  log_analytics_workspace_name      = var.log_analytics_workspace_name
+  log_analytics_resource_group_name = var.log_analytics_resource_group_name
+  diagnostic_logs_categories         = var.diagnostic_logs_categories
+  diagnostic_metrics_categories      = var.diagnostic_metrics_categories
+  diagnostic_retention_days          = var.diagnostic_retention_days
+  
+  # Azure Automation 설정
+  use_automation_for_setup          = var.use_automation_for_setup
+  automation_account_name           = var.automation_account_name
 
   tags = local.common_tags
 }

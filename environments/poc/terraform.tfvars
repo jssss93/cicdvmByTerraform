@@ -90,6 +90,40 @@ linux_vm_image_version = "latest"
 install_azure_cli = true  # VM 생성 시 Azure CLI, .NET SDK, Docker 자동 설치
 
 # ========================================
+# 사용자 정의 스크립트 설정 (테스트용)
+# ========================================
+custom_script_linux = <<-EOT
+#!/bin/bash
+echo "=== Linux VM 사용자 정의 스크립트 테스트 시작 ==="
+echo "현재 시간: $(date)"
+echo "현재 사용자: $(whoami)"
+echo "현재 디렉토리: $(pwd)"
+echo "시스템 정보:"
+uname -a
+echo "디스크 사용량:"
+df -h
+echo "메모리 사용량:"
+free -h
+echo "네트워크 정보:"
+ip addr show
+echo "=== 테스트 완료 - 파일이 /tmp/user-custom-script.sh에 저장됨 ==="
+EOT
+
+custom_script_windows = <<-EOT
+Write-Host "=== Windows VM 사용자 정의 스크립트 테스트 시작 ===" -ForegroundColor Green
+Write-Host "현재 시간: $(Get-Date)" -ForegroundColor Yellow
+Write-Host "현재 사용자: $env:USERNAME" -ForegroundColor Yellow
+Write-Host "현재 디렉토리: $(Get-Location)" -ForegroundColor Yellow
+Write-Host "시스템 정보:" -ForegroundColor Cyan
+Get-ComputerInfo | Select-Object WindowsProductName, TotalPhysicalMemory, CsProcessors
+Write-Host "디스크 사용량:" -ForegroundColor Cyan
+Get-WmiObject -Class Win32_LogicalDisk | Select-Object DeviceID, Size, FreeSpace
+Write-Host "네트워크 정보:" -ForegroundColor Cyan
+Get-NetIPAddress | Where-Object {$_.AddressFamily -eq 'IPv4'} | Select-Object IPAddress, InterfaceAlias
+Write-Host "=== 테스트 완료 - 파일이 C:\user-custom-script.ps1에 저장됨 ===" -ForegroundColor Green
+EOT
+
+# ========================================
 # 관리 ID 설정
 # ========================================
 enable_managed_identity = true
@@ -106,6 +140,15 @@ role_assignments = {
     scope               = "/subscriptions/d69e62aa-ef39-4bc0-b745-57ebc2bddcc8/resourceGroups/rg-az01-poc-hyundai.teams-01"
   }
 }
+
+# ========================================
+# 진단 설정 (Diagnostic Settings)
+# ========================================
+enable_diagnostic_settings = true  # VM 진단 설정 활성화
+
+# 기존 Log Analytics Workspace 사용
+log_analytics_workspace_name = "ict-poc-kttranslator-law-kc"
+log_analytics_resource_group_name = "rg-az01-poc-hyundai.teams-01"
 
 # ========================================
 # 고급 설정

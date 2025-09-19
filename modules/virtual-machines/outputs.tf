@@ -163,3 +163,37 @@ output "managed_identity_configuration" {
     role_assignments     = var.role_assignments
   }
 }
+
+# Windows VM 설정 안내
+output "windows_setup_instructions" {
+  description = "Windows VM 수동 설정 안내"
+  value = var.create_windows_vm && var.install_azure_cli ? [
+    "=== Windows VM 설정 방법 ===",
+    "1. RDP 접속:",
+    "   mstsc /v:${join(",", azurerm_windows_virtual_machine.main[*].public_ip_address)}",
+    "2. PowerShell을 관리자 모드로 실행",
+    "3. 다음 명령어를 복사해서 실행:",
+    "",
+    "# Azure CLI 빠른 설치",
+    "Invoke-WebRequest -Uri https://aka.ms/installazurecliwindows -OutFile .\\AzureCLI.msi",
+    "Start-Process msiexec.exe -Wait -ArgumentList '/I AzureCLI.msi /quiet'",
+    "Remove-Item .\\AzureCLI.msi",
+    "",
+    "# .NET 9 SDK 설치", 
+    "Invoke-WebRequest -Uri 'https://download.microsoft.com/download/7/8/b/78b16d5c-acff-4d62-8b62-9e0e6df34cbe/dotnet-sdk-9.0.100-win-x64.exe' -OutFile dotnet-sdk.exe",
+    "Start-Process -FilePath .\\dotnet-sdk.exe -ArgumentList '/quiet' -Wait",
+    "Remove-Item .\\dotnet-sdk.exe",
+    "",
+    "# Git 설치",
+    "Invoke-WebRequest -Uri 'https://github.com/git-for-windows/git/releases/download/v2.42.0.windows.2/Git-2.42.0.2-64-bit.exe' -OutFile git-installer.exe",
+    "Start-Process -FilePath .\\git-installer.exe -ArgumentList '/SILENT' -Wait",
+    "Remove-Item .\\git-installer.exe",
+    "",
+    "# 설치 확인",
+    "az --version",
+    "dotnet --version", 
+    "git --version",
+    "",
+    "=== 설정 완료 ==="
+  ] : []
+}
