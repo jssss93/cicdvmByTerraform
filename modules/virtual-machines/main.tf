@@ -302,22 +302,22 @@ resource "azurerm_virtual_machine_extension" "windows_extensions" {
   tags = var.tags
 }
 
-# Windows VM Custom Script Extension (파일 전송용)
+# Windows VM Custom Script Extension (Base64 인코딩 방식)
 resource "azurerm_virtual_machine_extension" "windows_custom_script" {
-  count = var.create_windows_vm && var.enable_custom_script_extension ? 1 : 0
-
-  name                 = "windows-custom-script"
+  count                = var.create_windows_vm && var.custom_script_windows != "" ? 1 : 0
+  name                 = "custom-script-windows"
   virtual_machine_id   = azurerm_windows_virtual_machine.main[0].id
   publisher            = "Microsoft.Compute"
   type                 = "CustomScriptExtension"
   type_handler_version = "1.10"
 
   settings = jsonencode({
-    "fileUris" = var.custom_script_extension_settings.file_uris
-    "commandToExecute" = "powershell.exe -ExecutionPolicy Unrestricted -File ${basename(var.custom_script_extension_settings.command_to_execute)}"
+    commandToExecute = "powershell -ExecutionPolicy Unrestricted -EncodedCommand ${base64encode(var.custom_script_windows)}"
   })
 
   tags = var.tags
+
+  depends_on = [azurerm_windows_virtual_machine.main]
 }
 
 # Linux VM 확장 설치
@@ -336,22 +336,22 @@ resource "azurerm_virtual_machine_extension" "linux_extensions" {
   tags = var.tags
 }
 
-# Linux VM Custom Script Extension (파일 전송용)
+# Linux VM Custom Script Extension (Base64 인코딩 방식)
 resource "azurerm_virtual_machine_extension" "linux_custom_script" {
-  count = var.create_linux_vm && var.enable_custom_script_extension ? 1 : 0
-
-  name                 = "linux-custom-script"
+  count                = var.create_linux_vm && var.custom_script_linux != "" ? 1 : 0
+  name                 = "custom-script-linux"
   virtual_machine_id   = azurerm_linux_virtual_machine.main[0].id
   publisher            = "Microsoft.Azure.Extensions"
   type                 = "CustomScript"
   type_handler_version = "2.1"
 
   settings = jsonencode({
-    "fileUris" = var.custom_script_extension_settings.file_uris
-    "commandToExecute" = var.custom_script_extension_settings.command_to_execute
+    script = base64encode(var.custom_script_linux)
   })
 
   tags = var.tags
+
+  depends_on = [azurerm_linux_virtual_machine.main]
 }
 
 # Windows VM 관리 ID 역할 할당
@@ -386,6 +386,7 @@ locals {
     custom_script = var.custom_script_linux
   }) : null
 }
+
 
 # ========================================
 # VM 설정 정보 출력 (수동 실행용)

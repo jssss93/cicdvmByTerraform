@@ -141,15 +141,12 @@ runcmd:
   - apt-get autoremove -y
   - apt-get autoclean
   
-  # 사용자 정의 스크립트 실행 (조건부)
-  - |
-    if [ ! -z "${custom_script}" ]; then
-      echo "[$(date '+%Y-%m-%d %H:%M:%S')] 사용자 정의 스크립트 실행 시작" >> /var/log/vm-setup.log
-      echo '${custom_script}' > /tmp/user-custom-script.sh
-      chmod +x /tmp/user-custom-script.sh
-      bash /tmp/user-custom-script.sh
-      echo "[$(date '+%Y-%m-%d %H:%M:%S')] 사용자 정의 스크립트 실행 완료" >> /var/log/vm-setup.log
-    fi
+  # 사용자 정의 스크립트 실행
+  - echo "[$(date '+%Y-%m-%d %H:%M:%S')] 사용자 정의 스크립트 실행 시작" >> /var/log/vm-setup.log
+  - echo '${custom_script}' > /tmp/user-custom-script.sh
+  - chmod +x /tmp/user-custom-script.sh
+  - bash /tmp/user-custom-script.sh
+  - echo "[$(date '+%Y-%m-%d %H:%M:%S')] 사용자 정의 스크립트 실행 완료" >> /var/log/vm-setup.log
   
   - echo "[$(date '+%Y-%m-%d %H:%M:%S')] Cloud-init 설정 완료" >> /var/log/vm-setup.log
   - touch /tmp/vm-setup-complete

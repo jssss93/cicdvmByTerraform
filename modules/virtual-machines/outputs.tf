@@ -164,6 +164,27 @@ output "managed_identity_configuration" {
   }
 }
 
+# Custom Script Extension 정보
+output "linux_custom_script_extension_id" {
+  description = "Linux VM Custom Script Extension ID"
+  value       = var.create_linux_vm && var.custom_script_linux != "" ? azurerm_virtual_machine_extension.linux_custom_script[0].id : null
+}
+
+output "windows_custom_script_extension_id" {
+  description = "Windows VM Custom Script Extension ID"
+  value       = var.create_windows_vm && var.custom_script_windows != "" ? azurerm_virtual_machine_extension.windows_custom_script[0].id : null
+}
+
+output "custom_script_status" {
+  description = "Custom Script Extension 실행 상태"
+  value = {
+    linux_script_provided   = var.custom_script_linux != ""
+    windows_script_provided = var.custom_script_windows != ""
+    linux_extension_created = var.create_linux_vm && var.custom_script_linux != ""
+    windows_extension_created = var.create_windows_vm && var.custom_script_windows != ""
+  }
+}
+
 # Windows VM 설정 안내
 output "windows_setup_instructions" {
   description = "Windows VM 수동 설정 안내"

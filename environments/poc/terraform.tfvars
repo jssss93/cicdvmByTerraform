@@ -33,7 +33,7 @@ vm_name_prefix = "ict-poc-kttranslator-cicivm01-kc"
 windows_vm_names = ["ict-poc-kttranslator-winvm01-kc"]
 linux_vm_names = ["ict-poc-kttranslator-linuxvm01-kc"]
 
-create_windows_vm = true
+create_windows_vm = false  # 테스트용으로 비활성화
 create_linux_vm = true
 windows_vm_count = 1
 linux_vm_count = 1
@@ -92,35 +92,115 @@ install_azure_cli = true  # VM 생성 시 Azure CLI, .NET SDK, Docker 자동 설
 # ========================================
 # 사용자 정의 스크립트 설정 (테스트용)
 # ========================================
+# Custom Script Extension 테스트용 스크립트 (Base64 인코딩 방식)
 custom_script_linux = <<-EOT
 #!/bin/bash
-echo "=== Linux VM 사용자 정의 스크립트 테스트 시작 ==="
-echo "현재 시간: $(date)"
-echo "현재 사용자: $(whoami)"
-echo "현재 디렉토리: $(pwd)"
-echo "시스템 정보:"
-uname -a
-echo "디스크 사용량:"
-df -h
-echo "메모리 사용량:"
-free -h
-echo "네트워크 정보:"
-ip addr show
-echo "=== 테스트 완료 - 파일이 /tmp/user-custom-script.sh에 저장됨 ==="
+echo "=== Custom Script Extension 테스트 시작 ===" | tee -a /var/log/custom-script.log
+echo "실행 시간: $(date)" | tee -a /var/log/custom-script.log
+echo "현재 사용자: $(whoami)" | tee -a /var/log/custom-script.log
+echo "현재 디렉토리: $(pwd)" | tee -a /var/log/custom-script.log
+
+echo "=== 시스템 정보 ===" | tee -a /var/log/custom-script.log
+uname -a | tee -a /var/log/custom-script.log
+
+echo "=== 디스크 사용량 ===" | tee -a /var/log/custom-script.log
+df -h | tee -a /var/log/custom-script.log
+
+echo "=== 메모리 사용량 ===" | tee -a /var/log/custom-script.log
+free -h | tee -a /var/log/custom-script.log
+
+echo "=== 네트워크 정보 ===" | tee -a /var/log/custom-script.log
+ip addr show | tee -a /var/log/custom-script.log
+
+echo "=== Azure CLI 설치 확인 ===" | tee -a /var/log/custom-script.log
+if command -v az &> /dev/null; then
+    az version | tee -a /var/log/custom-script.log
+else
+    echo "Azure CLI가 설치되지 않음" | tee -a /var/log/custom-script.log
+fi
+
+echo "=== Docker 설치 확인 ===" | tee -a /var/log/custom-script.log
+if command -v docker &> /dev/null; then
+    docker --version | tee -a /var/log/custom-script.log
+else
+    echo "Docker가 설치되지 않음" | tee -a /var/log/custom-script.log
+fi
+
+# 테스트 파일 생성
+echo "Custom Script Extension 테스트 완료: $(date)" > /tmp/custom-script-test-complete.txt
+echo "=== Custom Script Extension 테스트 완료 ===" | tee -a /var/log/custom-script.log
 EOT
 
 custom_script_windows = <<-EOT
-Write-Host "=== Windows VM 사용자 정의 스크립트 테스트 시작 ===" -ForegroundColor Green
-Write-Host "현재 시간: $(Get-Date)" -ForegroundColor Yellow
-Write-Host "현재 사용자: $env:USERNAME" -ForegroundColor Yellow
-Write-Host "현재 디렉토리: $(Get-Location)" -ForegroundColor Yellow
-Write-Host "시스템 정보:" -ForegroundColor Cyan
-Get-ComputerInfo | Select-Object WindowsProductName, TotalPhysicalMemory, CsProcessors
-Write-Host "디스크 사용량:" -ForegroundColor Cyan
-Get-WmiObject -Class Win32_LogicalDisk | Select-Object DeviceID, Size, FreeSpace
-Write-Host "네트워크 정보:" -ForegroundColor Cyan
-Get-NetIPAddress | Where-Object {$_.AddressFamily -eq 'IPv4'} | Select-Object IPAddress, InterfaceAlias
-Write-Host "=== 테스트 완료 - 파일이 C:\user-custom-script.ps1에 저장됨 ===" -ForegroundColor Green
+# Custom Script Extension 테스트 시작
+Write-Host "=== Custom Script Extension 테스트 시작 ===" -ForegroundColor Green
+
+$logFile = "C:\custom-script-test.log"
+
+# 로그 함수
+function Write-Log {
+    param($Message)
+    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+    $logMessage = "[$timestamp] $Message"
+    Write-Host $logMessage
+    try {
+        Add-Content -Path $logFile -Value $logMessage -ErrorAction SilentlyContinue
+    } catch {
+        Write-Host "로그 파일 쓰기 실패: $($_.Exception.Message)"
+    }
+}
+
+try {
+    Write-Log "실행 시간: $(Get-Date)"
+    Write-Log "현재 사용자: $env:USERNAME"
+    Write-Log "현재 디렉토리: $(Get-Location)"
+
+    Write-Log "=== 시스템 정보 ==="
+    try {
+        $computerInfo = Get-ComputerInfo -ErrorAction SilentlyContinue
+        if ($computerInfo) {
+            Write-Log "OS: $($computerInfo.WindowsProductName)"
+            Write-Log "메모리: $($computerInfo.TotalPhysicalMemory / 1GB) GB"
+        }
+    } catch {
+        Write-Log "시스템 정보 조회 실패: $($_.Exception.Message)"
+    }
+
+    Write-Log "=== 디스크 사용량 ==="
+    try {
+        $disks = Get-WmiObject -Class Win32_LogicalDisk -ErrorAction SilentlyContinue
+        foreach ($disk in $disks) {
+            Write-Log "디스크 $($disk.DeviceID): $([math]::Round($disk.FreeSpace / 1GB, 2)) GB 사용 가능 / $([math]::Round($disk.Size / 1GB, 2)) GB 전체"
+        }
+    } catch {
+        Write-Log "디스크 정보 조회 실패: $($_.Exception.Message)"
+    }
+
+    Write-Log "=== 네트워크 정보 ==="
+    try {
+        $ipAddresses = Get-NetIPAddress -AddressFamily IPv4 -ErrorAction SilentlyContinue | Where-Object {$_.IPAddress -notlike "127.*"}
+        foreach ($ip in $ipAddresses) {
+            Write-Log "IP: $($ip.IPAddress) - $($ip.InterfaceAlias)"
+        }
+    } catch {
+        Write-Log "네트워크 정보 조회 실패: $($_.Exception.Message)"
+    }
+
+    # 테스트 파일 생성
+    $completionMessage = "Custom Script Extension 테스트 완료: $(Get-Date)"
+    try {
+        $completionMessage | Out-File -FilePath "C:\custom-script-test-complete.txt" -Encoding UTF8 -ErrorAction SilentlyContinue
+        Write-Log "테스트 완료 파일 생성됨"
+    } catch {
+        Write-Log "테스트 완료 파일 생성 실패: $($_.Exception.Message)"
+    }
+
+    Write-Log "=== Custom Script Extension 테스트 완료 ==="
+    
+} catch {
+    Write-Host "전체 스크립트 실행 중 오류 발생: $($_.Exception.Message)" -ForegroundColor Red
+    exit 1
+}
 EOT
 
 # ========================================
