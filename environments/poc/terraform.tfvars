@@ -33,7 +33,7 @@ vm_name_prefix = "ict-poc-kttranslator-cicivm01-kc"
 windows_vm_names = ["ict-poc-kttranslator-winvm01-kc"]
 linux_vm_names = ["ict-poc-kttranslator-linuxvm01-kc"]
 
-create_windows_vm = false  # 테스트용으로 비활성화
+create_windows_vm = true  # 테스트용으로 비활성화
 create_linux_vm = true
 windows_vm_count = 1
 linux_vm_count = 1

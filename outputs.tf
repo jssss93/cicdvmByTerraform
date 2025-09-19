@@ -49,27 +49,27 @@ output "windows_vm_count" {
 
 output "windows_vm_names" {
   description = "Windows VM 이름 목록"
-  value       = module.virtual_machines.windows_vm_names
+  value       = module.windows_vm.windows_vm_names
 }
 
 output "windows_vm_ids" {
   description = "Windows VM ID 목록"
-  value       = module.virtual_machines.windows_vm_ids
+  value       = module.windows_vm.windows_vm_ids
 }
 
 output "windows_public_ips" {
   description = "Windows VM 공용 IP 주소 목록"
-  value       = module.virtual_machines.windows_public_ips
+  value       = module.windows_vm.windows_public_ips
 }
 
 output "windows_private_ips" {
   description = "Windows VM 사설 IP 주소 목록"
-  value       = module.virtual_machines.windows_private_ips
+  value       = module.windows_vm.windows_private_ips
 }
 
 output "windows_rdp_connections" {
   description = "Windows VM RDP 연결 명령어 목록"
-  value       = module.virtual_machines.windows_rdp_connections
+  value       = module.windows_vm.windows_rdp_connections
 }
 
 # ========================================
@@ -87,27 +87,27 @@ output "linux_vm_count" {
 
 output "linux_vm_names" {
   description = "Linux VM 이름 목록"
-  value       = module.virtual_machines.linux_vm_names
+  value       = module.linux_vm.linux_vm_names
 }
 
 output "linux_vm_ids" {
   description = "Linux VM ID 목록"
-  value       = module.virtual_machines.linux_vm_ids
+  value       = module.linux_vm.linux_vm_ids
 }
 
 output "linux_public_ips" {
   description = "Linux VM 공용 IP 주소 목록"
-  value       = module.virtual_machines.linux_public_ips
+  value       = module.linux_vm.linux_public_ips
 }
 
 output "linux_private_ips" {
   description = "Linux VM 사설 IP 주소 목록"
-  value       = module.virtual_machines.linux_private_ips
+  value       = module.linux_vm.linux_private_ips
 }
 
 output "linux_ssh_connections" {
   description = "Linux VM SSH 연결 명령어 목록"
-  value       = module.virtual_machines.linux_ssh_connections
+  value       = module.linux_vm.linux_ssh_connections
 }
 
 # ========================================
@@ -115,32 +115,32 @@ output "linux_ssh_connections" {
 # ========================================
 output "windows_vm_public_ip" {
   description = "첫 번째 Windows VM 공용 IP 주소 (하위 호환성)"
-  value       = module.virtual_machines.windows_public_ip
+  value       = module.windows_vm.windows_vm_public_ip
 }
 
 output "linux_vm_public_ip" {
   description = "첫 번째 Linux VM 공용 IP 주소 (하위 호환성)"
-  value       = module.virtual_machines.linux_public_ip
+  value       = module.linux_vm.linux_vm_public_ip
 }
 
 output "windows_vm_private_ip" {
   description = "첫 번째 Windows VM 사설 IP 주소 (하위 호환성)"
-  value       = module.virtual_machines.windows_private_ip
+  value       = module.windows_vm.windows_vm_private_ip
 }
 
 output "linux_vm_private_ip" {
   description = "첫 번째 Linux VM 사설 IP 주소 (하위 호환성)"
-  value       = module.virtual_machines.linux_private_ip
+  value       = module.linux_vm.linux_vm_private_ip
 }
 
 output "windows_rdp_connection" {
   description = "첫 번째 Windows VM RDP 연결 명령어 (하위 호환성)"
-  value       = module.virtual_machines.windows_rdp_connection
+  value       = module.windows_vm.windows_rdp_connection
 }
 
 output "linux_ssh_connection" {
   description = "첫 번째 Linux VM SSH 연결 명령어 (하위 호환성)"
-  value       = module.virtual_machines.linux_ssh_connection
+  value       = module.linux_vm.linux_ssh_connection
 }
 
 # ========================================
@@ -148,12 +148,12 @@ output "linux_ssh_connection" {
 # ========================================
 output "admin_username" {
   description = "VM 관리자 사용자 이름"
-  value       = module.virtual_machines.admin_username
+  value       = var.admin_username
 }
 
 output "admin_password" {
   description = "VM 관리자 비밀번호"
-  value       = module.virtual_machines.admin_password
+  value       = var.admin_password
   sensitive   = true
 }
 
@@ -197,17 +197,23 @@ output "data_disk_created" {
 
 output "windows_data_disk_ids" {
   description = "Windows VM 데이터 디스크 ID 목록"
-  value       = var.create_windows_vm ? module.virtual_machines.windows_data_disk_ids : []
+  value       = var.create_windows_vm ? module.windows_vm.windows_data_disk_ids : []
 }
 
 output "linux_data_disk_ids" {
   description = "Linux VM 데이터 디스크 ID 목록"
-  value       = var.create_linux_vm ? module.virtual_machines.linux_data_disk_ids : []
+  value       = var.create_linux_vm ? module.linux_vm.linux_data_disk_ids : []
 }
 
 output "data_disk_configuration" {
   description = "데이터 디스크 설정 정보"
-  value       = module.virtual_machines.data_disk_configuration
+  value = {
+    created = var.create_data_disk
+    size_gb = var.data_disk_size_gb
+    storage_account_type = var.data_disk_storage_account_type
+    caching = var.data_disk_caching
+    lun = var.data_disk_lun
+  }
 }
 
 # ========================================
@@ -215,21 +221,26 @@ output "data_disk_configuration" {
 # ========================================
 output "windows_vm_principal_ids" {
   description = "Windows VM 관리 ID Principal ID 목록"
-  value       = module.virtual_machines.windows_vm_principal_ids
+  value       = module.windows_vm.windows_vm_principal_ids
 }
 
 output "linux_vm_principal_ids" {
   description = "Linux VM 관리 ID Principal ID 목록"
-  value       = module.virtual_machines.linux_vm_principal_ids
+  value       = module.linux_vm.linux_vm_principal_ids
 }
 
 output "managed_identity_configuration" {
   description = "관리 ID 설정 정보"
-  value       = module.virtual_machines.managed_identity_configuration
+  value = {
+    enabled = var.enable_managed_identity
+    type = var.managed_identity_type
+    user_assigned_ids = var.user_assigned_identity_ids
+    role_assignments = var.role_assignments
+  }
 }
 
 # Windows VM 설정 안내
 output "windows_setup_instructions" {
   description = "Windows VM 수동 설정 안내"
-  value       = var.create_windows_vm && var.install_azure_cli ? module.virtual_machines.windows_setup_instructions : []
+  value       = var.create_windows_vm && var.install_azure_cli ? module.windows_vm.windows_setup_instructions : []
 }
