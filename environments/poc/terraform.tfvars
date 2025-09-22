@@ -87,7 +87,7 @@ linux_vm_image_version = "latest"
 # ========================================
 # Azure CLI 및 도구 설치 설정
 # ========================================
-install_azure_cli = true  # VM 생성 시 Azure CLI, .NET SDK, Docker 자동 설치
+install_azure_cli = false  # VM 생성 시 Azure CLI, .NET SDK, Docker 자동 설치 (비활성화 - Custom Script Extension만 사용)
 
 # ========================================
 # 사용자 정의 스크립트 설정 (테스트용)
@@ -173,121 +173,8 @@ touch /tmp/vm-setup-complete
 log "VM 초기 설정 스크립트 종료"
 EOT
 
-custom_script_windows = <<-EOT
-Write-Host "Windows VM 설정 시작"
-"$(Get-Date): Windows VM 설정 시작" | Out-File -FilePath "C:\vm-setup.log" -Force
-Write-Host "Azure CLI 설치 중..."
-Set-ExecutionPolicy Bypass -Scope Process -Force
-try {
-    iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
-    choco install azure-cli -y --force
-    "$(Get-Date): Azure CLI 설치 완료" | Out-File -FilePath "C:\setup-complete.txt" -Force
-    Write-Host "설정 완료"
-} catch {
-    "$(Get-Date): 오류 발생" | Out-File -FilePath "C:\setup-error.txt" -Force
-    Write-Host "설정 중 오류 발생"
-}
-# Windows VM 초기 설정 및 Azure CLI 설치 스크립트
-Write-Host "=== Windows VM 초기 설정 시작 ===" -ForegroundColor Green
-
-# 로그 파일 설정
-$logFile = "C:\vm-setup.log"
-$timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-
-# 로그 함수
-function Write-Log {
-    param($Message)
-    $logMessage = "[$timestamp] $Message"
-    Write-Host $logMessage
-    try {
-        Add-Content -Path $logFile -Value $logMessage -Force
-    } catch {
-        Write-Host "로그 파일 쓰기 실패: $($_.Exception.Message)"
-    }
-}
-
-try {
-    Write-Log "Windows VM 초기 설정 시작"
-    Write-Log "실행 시간: $(Get-Date)"
-    Write-Log "현재 사용자: $env:USERNAME"
-
-    # PowerShell 실행 정책 설정
-    Write-Log "PowerShell 실행 정책 설정 중..."
-    Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope LocalMachine -Force
-
-    # Chocolatey 설치 (패키지 관리자)
-    Write-Log "Chocolatey 설치 중..."
-    if (!(Get-Command choco -ErrorAction SilentlyContinue)) {
-        Set-ExecutionPolicy Bypass -Scope Process -Force
-        [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
-        Invoke-Expression ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
-        
-        # PATH 환경변수 새로고침
-        $env:PATH = [System.Environment]::GetEnvironmentVariable("PATH","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("PATH","User")
-        Write-Log "Chocolatey 설치 완료"
-    } else {
-        Write-Log "Chocolatey 이미 설치됨"
-    }
-
-    # Azure CLI 설치
-    Write-Log "Azure CLI 설치 중..."
-    choco install azure-cli -y --force
-    
-    # PATH 환경변수 새로고침
-    $env:PATH = [System.Environment]::GetEnvironmentVariable("PATH","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("PATH","User")
-    
-    # Azure CLI 버전 확인
-    Write-Log "Azure CLI 설치 확인 중..."
-    Start-Sleep -Seconds 5
-    $azVersion = & az version --output table 2>&1
-    if ($LASTEXITCODE -eq 0) {
-        Write-Log "Azure CLI 설치 성공"
-    } else {
-        Write-Log "Azure CLI 버전 확인 실패, 재시도..."
-    }
-
-    # Git 설치
-    Write-Log "Git 설치 중..."
-    choco install git -y --force
-
-    # .NET SDK 설치
-    Write-Log ".NET SDK 설치 중..."
-    choco install dotnet-sdk -y --force
-
-    # Docker Desktop 설치 (Windows Server에서는 Docker Engine)
-    Write-Log "Docker 설치 중..."
-    choco install docker-desktop -y --force
-
-    # 설치 완료 파일 생성
-    Write-Log "설치 완료 파일 생성 중..."
-    $completionData = @"
-Windows VM 초기 설정 완료
-설치 시간: $(Get-Date)
-설치된 소프트웨어:
-- Azure CLI
-- Git
-- .NET SDK  
-- Docker Desktop
-- Chocolatey
-
-로그 파일: C:\vm-setup.log
-"@
-    
-    $completionData | Out-File -FilePath "C:\vm-setup-complete.txt" -Encoding UTF8 -Force
-    Write-Log "설치 완료 파일 생성됨: C:\vm-setup-complete.txt"
-
-    # 테스트 파일도 생성
-    "Custom Script Extension 실행 완료: $(Get-Date)" | Out-File -FilePath "C:\custom-script-test-complete.txt" -Encoding UTF8 -Force
-    Write-Log "테스트 파일 생성됨: C:\custom-script-test-complete.txt"
-
-    Write-Log "=== Windows VM 초기 설정 완료 ==="
-    
-} catch {
-    Write-Log "오류 발생: $($_.Exception.Message)"
-    Write-Host "스크립트 실행 중 오류 발생: $($_.Exception.Message)" -ForegroundColor Red
-    exit 0
-}
-EOT
+# 사용자 정의 스크립트 비활성화 - Custom Script Extension만 사용
+custom_script_windows = ""
 
 # ========================================
 # 관리 ID 설정

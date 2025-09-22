@@ -29,10 +29,6 @@ locals {
     var.existing_nsg_name != null ? data.azurerm_network_security_group.existing[0].id : null
   )
   
-  # Windows PowerShell 스크립트 (Azure CLI 및 .NET SDK 설치)
-  windows_script = var.install_azure_cli ? base64encode(templatefile("${path.module}/scripts/install-windows.ps1", {
-    custom_script = var.custom_script_windows
-  })) : null
 }
 
 # 랜덤 패스워드 생성 (admin_password가 제공되지 않은 경우)
@@ -92,12 +88,6 @@ resource "azurerm_windows_virtual_machine" "main" {
   availability_set_id = var.availability_set_id
   zone               = var.availability_zone
 
-  # Windows VM 초기 설정 스크립트
-  custom_data = var.install_azure_cli ? base64encode(
-    templatefile("${path.module}/scripts/install-windows.ps1", {
-      custom_script = var.custom_script_windows
-    })
-  ) : null
 
   network_interface_ids = [
     azurerm_network_interface.windows_vm[count.index].id,
@@ -177,7 +167,7 @@ resource "azurerm_virtual_machine_extension" "windows_extensions" {
 
 # Windows VM Custom Script Extension
 resource "azurerm_virtual_machine_extension" "windows_custom_script" {
-  count                = var.windows_vm_count > 0 && var.custom_script_windows != "" ? 1 : 0
+  count                = var.windows_vm_count > 0 ? 1 : 0
   name                 = "custom-script-windows"
   virtual_machine_id   = azurerm_windows_virtual_machine.main[0].id
   publisher            = "Microsoft.Compute"
@@ -210,10 +200,7 @@ locals {
   windows_setup_instructions = var.windows_vm_count > 0 && var.install_azure_cli ? [
     "Windows VM 설정 방법:",
     "1. RDP 접속: mstsc /v:${azurerm_windows_virtual_machine.main[0].public_ip_address}",
-    "2. PowerShell 관리자 모드로 실행",
-    "3. 다음 스크립트 실행:",
-    templatefile("${path.module}/scripts/install-windows.ps1", {
-      custom_script = var.custom_script_windows
-    })
+    "2. Custom Script Extension을 통해 install-windows-en.ps1이 자동 실행됩니다",
+    "3. 설치 로그는 C:\\vm-setup.log에서 확인 가능합니다"
   ] : []
 }
