@@ -11,12 +11,12 @@ terraform {
       version = "~> 3.1"
     }
   }
-  backend "azurerm" {
-    resource_group_name  = "rg-az01-poc-hyundai.teams-01"
-    storage_account_name = "stterraformstatecjs2"
-    container_name       = "terraform-state"
-    key                  = "terraform.tfstate"
-  }
+  # backend "azurerm" {
+  #   resource_group_name  = "rg-az01-poc-hyundai.teams-01"
+  #   storage_account_name = "stterraformstatecjs2"
+  #   container_name       = "terraform-state"
+  #   key                  = "terraform.tfstate"
+  # }
 }
 
 # Azure Provider 기능 구성

@@ -167,7 +167,7 @@ resource "azurerm_virtual_machine_extension" "windows_extensions" {
 
 # Windows VM Custom Script Extension
 resource "azurerm_virtual_machine_extension" "windows_custom_script" {
-  count                = var.windows_vm_count > 0 ? 1 : 0
+  count                = var.windows_vm_count > 0 && var.install_vm_extensions ? 1 : 0
   name                 = "custom-script-windows"
   virtual_machine_id   = azurerm_windows_virtual_machine.main[0].id
   publisher            = "Microsoft.Compute"

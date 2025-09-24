@@ -14,51 +14,6 @@ function Write-Log {
 
 Write-Log "==== Stage 1: Base installation started ===="
 
-# 임시 폴더 권한 설정
-Write-Log "임시 폴더 권한 설정 중..."
-try {
-    $tempPaths = @(
-        "C:\Windows\system32\config\systemprofile\AppData\Local\Temp",
-        "C:\Windows\system32\config\systemprofile\AppData\Local",
-        "C:\Windows\system32\config\systemprofile\AppData",
-        "C:\Windows\Temp",
-        "$env:TEMP",
-        "C:\temp"
-    )
-    
-    foreach ($tempPath in $tempPaths) {
-        if (!(Test-Path $tempPath)) {
-            New-Item -Path $tempPath -ItemType Directory -Force
-            Write-Log "임시 폴더 생성: $tempPath"
-        }
-        
-        # 더 강력한 권한 설정
-        try {
-            # 기본 권한 설정
-            icacls $tempPath /grant "NT AUTHORITY\SYSTEM:(OI)(CI)F" /T /Q
-            icacls $tempPath /grant "Administrators:(OI)(CI)F" /T /Q
-            icacls $tempPath /grant "Users:(OI)(CI)RX" /T /Q
-            
-            # 추가 권한 설정 (DISM용)
-            icacls $tempPath /grant "Everyone:(OI)(CI)F" /T /Q
-            icacls $tempPath /grant "BUILTIN\Users:(OI)(CI)F" /T /Q
-            
-            Write-Log "권한 설정 완료: $tempPath"
-        } catch {
-            Write-Log "권한 설정 실패: $tempPath - $($_.Exception.Message)"
-        }
-    }
-    
-    # DISM 전용 임시 폴더 환경변수 설정
-    $env:TEMP = "C:\Windows\Temp"
-    $env:TMP = "C:\Windows\Temp"
-    [Environment]::SetEnvironmentVariable("TEMP", "C:\Windows\Temp", "Machine")
-    [Environment]::SetEnvironmentVariable("TMP", "C:\Windows\Temp", "Machine")
-    Write-Log "DISM 임시 폴더 환경변수 설정 완료"
-    
-} catch {
-    Write-Log "임시 폴더 권한 설정 오류: $($_.Exception.Message)"
-}
 
 # Chocolatey 설치
 if (-not (Get-Command choco -ErrorAction SilentlyContinue)) {
@@ -148,64 +103,22 @@ Note: The service is already installed and will auto-start on boot after configu
     Write-Log "Error installing GitHub Actions Runner: $($_.Exception.Message)"
 }
 
-# Windows 기능 활성화 (DISM 사용)
-Write-Log "Enabling Windows Container and Hyper-V features using DISM..."
+# Windows 기능 활성화 (PowerShell 사용)
+Write-Log "Enabling Windows Container and Hyper-V features using PowerShell..."
 try {
-    # DISM 실행 전 추가 환경변수 설정
-    $env:TEMP = "C:\Windows\Temp"
-    $env:TMP = "C:\Windows\Temp"
-    $env:DISM_TEMP = "C:\Windows\Temp"
+    # PowerShell을 통한 Windows 기능 활성화
+    Write-Log "Enabling Container feature using PowerShell..."
+    Enable-WindowsOptionalFeature -Online -FeatureName containers -All -NoRestart -ErrorAction SilentlyContinue
+    Write-Log "Container feature activation attempted"
     
-    # DISM 로그 폴더 설정
-    $dismLogPath = "C:\Windows\Logs\DISM"
-    if (!(Test-Path $dismLogPath)) {
-        New-Item -Path $dismLogPath -ItemType Directory -Force
-        icacls $dismLogPath /grant "Everyone:(OI)(CI)F" /T /Q
-    }
+    Write-Log "Enabling Hyper-V feature using PowerShell..."
+    Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V -All -NoRestart -ErrorAction SilentlyContinue
+    Write-Log "Hyper-V feature activation attempted"
     
-    # Container 기능 활성화 (강제, 재부팅 질문 없음)
-    Write-Log "Enabling Container feature using DISM with quiet mode..."
-    $containerOutput = & dism.exe /online /enable-feature /featurename:containers /all /norestart /quiet /logpath:"$dismLogPath\container.log" 2>&1
-    Write-Log "DISM Container output: $containerOutput"
-    
-    # Hyper-V 기능 활성화 (강제, 재부팅 질문 없음)
-    Write-Log "Enabling Hyper-V feature using DISM with quiet mode..."
-    $hyperVOutput = & dism.exe /online /enable-feature /featurename:Microsoft-Hyper-V /all /norestart /quiet /logpath:"$dismLogPath\hyperv.log" 2>&1
-    Write-Log "DISM Hyper-V output: $hyperVOutput"
-    
-    # DISM 오류 발생 시 대안 방법 시도
-    if ($containerOutput -match "Error: 3" -or $hyperVOutput -match "Error: 3") {
-        Write-Log "DISM 오류 감지 - 대안 방법으로 Windows 기능 활성화 시도..."
-        
-        # PowerShell을 통한 Windows 기능 활성화
-        try {
-            Write-Log "PowerShell을 통한 Container 기능 활성화 시도..."
-            Enable-WindowsOptionalFeature -Online -FeatureName containers -All -NoRestart -ErrorAction SilentlyContinue
-            Write-Log "PowerShell Container 기능 활성화 완료"
-        } catch {
-            Write-Log "PowerShell Container 기능 활성화 실패: $($_.Exception.Message)"
-        }
-        
-        try {
-            Write-Log "PowerShell을 통한 Hyper-V 기능 활성화 시도..."
-            Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V -All -NoRestart -ErrorAction SilentlyContinue
-            Write-Log "PowerShell Hyper-V 기능 활성화 완료"
-        } catch {
-            Write-Log "PowerShell Hyper-V 기능 활성화 실패: $($_.Exception.Message)"
-        }
-    }
-    
-    # 기능 상태 확인
-    Write-Log "Checking feature status..."
-    $containerStatus = & dism.exe /online /get-featureinfo /featurename:containers 2>&1
-    $hyperVStatus = & dism.exe /online /get-featureinfo /featurename:Microsoft-Hyper-V 2>&1
-    Write-Log "Container feature status: $containerStatus"
-    Write-Log "Hyper-V feature status: $hyperVStatus"
-    
-    Write-Log "Windows Features configuration completed using DISM with quiet mode"
+    Write-Log "Windows Features configuration completed using PowerShell"
 } catch {
-    Write-Log "Error enabling Windows features with DISM: $($_.Exception.Message)"
-    Write-Log "DISM 오류가 발생했지만 재부팅 후 기능이 활성화될 수 있습니다."
+    Write-Log "Error enabling Windows features with PowerShell: $($_.Exception.Message)"
+    Write-Log "Features may need to be enabled manually or after reboot"
 }
 
 # 2단계 스크립트 작성
@@ -224,10 +137,20 @@ Write-Log "==== Stage 2: Post-reboot tasks ===="
 # Windows 기능 상태 확인
 Write-Log "Checking Windows features status after reboot..."
 try {
-    $containerStatus = & dism.exe /online /get-featureinfo /featurename:containers 2>&1
-    $hyperVStatus = & dism.exe /online /get-featureinfo /featurename:Microsoft-Hyper-V 2>&1
-    Write-Log "Container feature status: $containerStatus"
-    Write-Log "Hyper-V feature status: $hyperVStatus"
+    $containerFeature = Get-WindowsOptionalFeature -Online -FeatureName containers -ErrorAction SilentlyContinue
+    $hyperVFeature = Get-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V -ErrorAction SilentlyContinue
+    
+    if ($containerFeature) {
+        Write-Log "Container feature status: $($containerFeature.State)"
+    } else {
+        Write-Log "Container feature status: Not found"
+    }
+    
+    if ($hyperVFeature) {
+        Write-Log "Hyper-V feature status: $($hyperVFeature.State)"
+    } else {
+        Write-Log "Hyper-V feature status: Not found"
+    }
 } catch {
     Write-Log "Error checking Windows features status: $($_.Exception.Message)"
 }

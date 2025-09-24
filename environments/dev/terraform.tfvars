@@ -17,7 +17,7 @@ common_tags = {
 }
 
 use_existing_resource_group = true
-existing_resource_group_name = "rg-az01-dev-hyundai.teams-01"
+existing_resource_group_name = "rg-az01-poc-hyundai.teams-01"
 
 # 기존 네트워킹 리소스 이름으로 설정
 existing_vnet_name = "ict-dev-kttranslator-vnet-kc"
@@ -54,7 +54,7 @@ data_disk_caching = "ReadWrite"
 data_disk_lun = 0
 
 # 관리자 계정
-admin_username = "azureuser"
+admin_username = "cjs"
 admin_password = "1q2w3e4r####"  # 강력한 비밀번호 설정
 
 # ========================================
@@ -65,17 +65,11 @@ public_ip_allocation_method = "Static"
 public_ip_sku = "Standard"
 
 # 기존 NSG 사용 (이름으로 지정 가능)
-# existing_nsg_name = "your-existing-nsg-name"
+existing_nsg_name = "ict-dev-kttranslator-compute-nsg-kc"
 
 # ========================================
 # 이미지 설정 - Windows Server 2022 Datacenter
 # ========================================
-use_gallery_images = false  # 마켓플레이스 이미지 사용
-create_compute_gallery = true  # 갤러리 불필요 (기존 인프라 활용)
-
-# 갤러리 설정 (create_compute_gallery = false이지만 변수는 필요)
-gallery_name = "ict-dev-kttranslator-cg-kc"
-gallery_description = "Terraform으로 관리되는 사용자 정의 VM 이미지 갤러리"
 
 # Windows Server 2022 Datacenter 이미지 (원본 이미지 세부 정보 기준)
 windows_vm_image_publisher = "MicrosoftWindowsServer"
@@ -93,4 +87,7 @@ linux_vm_image_version = "latest"
 # 고급 설정
 # ========================================
 enable_boot_diagnostics = true
+
+# 커스텀 스크립트 확장 비활성화 (PowerShell 문법 오류로 인해)
+install_vm_extensions = true
 
