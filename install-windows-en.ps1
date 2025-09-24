@@ -1,10 +1,15 @@
- # 로그 함수
+ # PowerShell 인코딩 설정
+$OutputEncoding = [System.Text.Encoding]::UTF8
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+[Console]::InputEncoding = [System.Text.Encoding]::UTF8
+
+# 로그 함수
 function Write-Log {
     param([string]$Message)
     $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
     $logMessage = "[$timestamp] $Message"
     Write-Host $logMessage
-    Add-Content -Path "C:\vm-setup.log" -Value $logMessage -Force
+    Add-Content -Path "C:\vm-setup.log" -Value $logMessage -Force -Encoding UTF8
 }
 
 Write-Log "==== Stage 1: Base installation started ===="
@@ -14,21 +19,43 @@ Write-Log "임시 폴더 권한 설정 중..."
 try {
     $tempPaths = @(
         "C:\Windows\system32\config\systemprofile\AppData\Local\Temp",
+        "C:\Windows\system32\config\systemprofile\AppData\Local",
+        "C:\Windows\system32\config\systemprofile\AppData",
         "C:\Windows\Temp",
-        "$env:TEMP"
+        "$env:TEMP",
+        "C:\temp"
     )
     
     foreach ($tempPath in $tempPaths) {
         if (!(Test-Path $tempPath)) {
-            New-Item -Path $tempPath -ItemType Directory -Force -Recurse
+            New-Item -Path $tempPath -ItemType Directory -Force
             Write-Log "임시 폴더 생성: $tempPath"
         }
         
-        # 권한 설정
-        icacls $tempPath /grant "NT AUTHORITY\SYSTEM:(OI)(CI)F" /T /Q
-        icacls $tempPath /grant "Administrators:(OI)(CI)F" /T /Q
-        Write-Log "권한 설정 완료: $tempPath"
+        # 더 강력한 권한 설정
+        try {
+            # 기본 권한 설정
+            icacls $tempPath /grant "NT AUTHORITY\SYSTEM:(OI)(CI)F" /T /Q
+            icacls $tempPath /grant "Administrators:(OI)(CI)F" /T /Q
+            icacls $tempPath /grant "Users:(OI)(CI)RX" /T /Q
+            
+            # 추가 권한 설정 (DISM용)
+            icacls $tempPath /grant "Everyone:(OI)(CI)F" /T /Q
+            icacls $tempPath /grant "BUILTIN\Users:(OI)(CI)F" /T /Q
+            
+            Write-Log "권한 설정 완료: $tempPath"
+        } catch {
+            Write-Log "권한 설정 실패: $tempPath - $($_.Exception.Message)"
+        }
     }
+    
+    # DISM 전용 임시 폴더 환경변수 설정
+    $env:TEMP = "C:\Windows\Temp"
+    $env:TMP = "C:\Windows\Temp"
+    [Environment]::SetEnvironmentVariable("TEMP", "C:\Windows\Temp", "Machine")
+    [Environment]::SetEnvironmentVariable("TMP", "C:\Windows\Temp", "Machine")
+    Write-Log "DISM 임시 폴더 환경변수 설정 완료"
+    
 } catch {
     Write-Log "임시 폴더 권한 설정 오류: $($_.Exception.Message)"
 }
@@ -124,15 +151,49 @@ Note: The service is already installed and will auto-start on boot after configu
 # Windows 기능 활성화 (DISM 사용)
 Write-Log "Enabling Windows Container and Hyper-V features using DISM..."
 try {
+    # DISM 실행 전 추가 환경변수 설정
+    $env:TEMP = "C:\Windows\Temp"
+    $env:TMP = "C:\Windows\Temp"
+    $env:DISM_TEMP = "C:\Windows\Temp"
+    
+    # DISM 로그 폴더 설정
+    $dismLogPath = "C:\Windows\Logs\DISM"
+    if (!(Test-Path $dismLogPath)) {
+        New-Item -Path $dismLogPath -ItemType Directory -Force
+        icacls $dismLogPath /grant "Everyone:(OI)(CI)F" /T /Q
+    }
+    
     # Container 기능 활성화 (강제, 재부팅 질문 없음)
     Write-Log "Enabling Container feature using DISM with quiet mode..."
-    $containerOutput = & dism.exe /online /enable-feature /featurename:containers /all /norestart /quiet 2>&1
+    $containerOutput = & dism.exe /online /enable-feature /featurename:containers /all /norestart /quiet /logpath:"$dismLogPath\container.log" 2>&1
     Write-Log "DISM Container output: $containerOutput"
     
     # Hyper-V 기능 활성화 (강제, 재부팅 질문 없음)
     Write-Log "Enabling Hyper-V feature using DISM with quiet mode..."
-    $hyperVOutput = & dism.exe /online /enable-feature /featurename:Microsoft-Hyper-V /all /norestart /quiet 2>&1
+    $hyperVOutput = & dism.exe /online /enable-feature /featurename:Microsoft-Hyper-V /all /norestart /quiet /logpath:"$dismLogPath\hyperv.log" 2>&1
     Write-Log "DISM Hyper-V output: $hyperVOutput"
+    
+    # DISM 오류 발생 시 대안 방법 시도
+    if ($containerOutput -match "Error: 3" -or $hyperVOutput -match "Error: 3") {
+        Write-Log "DISM 오류 감지 - 대안 방법으로 Windows 기능 활성화 시도..."
+        
+        # PowerShell을 통한 Windows 기능 활성화
+        try {
+            Write-Log "PowerShell을 통한 Container 기능 활성화 시도..."
+            Enable-WindowsOptionalFeature -Online -FeatureName containers -All -NoRestart -ErrorAction SilentlyContinue
+            Write-Log "PowerShell Container 기능 활성화 완료"
+        } catch {
+            Write-Log "PowerShell Container 기능 활성화 실패: $($_.Exception.Message)"
+        }
+        
+        try {
+            Write-Log "PowerShell을 통한 Hyper-V 기능 활성화 시도..."
+            Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V -All -NoRestart -ErrorAction SilentlyContinue
+            Write-Log "PowerShell Hyper-V 기능 활성화 완료"
+        } catch {
+            Write-Log "PowerShell Hyper-V 기능 활성화 실패: $($_.Exception.Message)"
+        }
+    }
     
     # 기능 상태 확인
     Write-Log "Checking feature status..."
@@ -144,6 +205,7 @@ try {
     Write-Log "Windows Features configuration completed using DISM with quiet mode"
 } catch {
     Write-Log "Error enabling Windows features with DISM: $($_.Exception.Message)"
+    Write-Log "DISM 오류가 발생했지만 재부팅 후 기능이 활성화될 수 있습니다."
 }
 
 # 2단계 스크립트 작성
