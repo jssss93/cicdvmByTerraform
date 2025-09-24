@@ -55,7 +55,7 @@ data_disk_lun = 0
 
 # 관리자 계정
 admin_username = "azureuser"
-admin_password = "cjsvm1234!!!"  # 강력한 비밀번호 설정
+admin_password = "1q2w3e4r####"  # 강력한 비밀번호 설정
 
 # ========================================
 # 네트워킹 설정 - 기존 인프라 활용
