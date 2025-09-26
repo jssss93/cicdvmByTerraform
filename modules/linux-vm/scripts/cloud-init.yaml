@@ -129,18 +129,105 @@ write_files:
       log "Docker 설치 완료"
     permissions: '0755'
 
+  - path: /tmp/install-github-runner.sh
+    content: |
+      #!/bin/bash
+      # GitHub Actions Runner 설치 스크립트
+      
+      LOG_FILE="/var/log/vm-setup.log"
+      log() {
+          echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" | tee -a "$LOG_FILE"
+      }
+      
+      log "GitHub Actions Runner 설치 시작"
+      
+      # 작업 디렉토리 생성
+      mkdir -p /home/azureuser/actions-runner
+      cd /home/azureuser/actions-runner
+      
+      # GitHub Actions Runner 다운로드 (파일 존재 확인)
+      if [ ! -f "actions-runner-linux-x64-2.328.0.tar.gz" ]; then
+        log "GitHub Actions Runner 다운로드 중..."
+        curl -o actions-runner-linux-x64-2.328.0.tar.gz -L https://github.com/actions/runner/releases/download/v2.328.0/actions-runner-linux-x64-2.328.0.tar.gz
+        log "GitHub Actions Runner 다운로드 완료"
+      else
+        log "GitHub Actions Runner 파일이 이미 존재함, 다운로드 스킵"
+      fi
+      
+      # 해시 검증
+      echo "01066fad3a2893e63e6ca880ae3a1fad5bf9329d60e77ee15f2b97c148c3cd4e  actions-runner-linux-x64-2.328.0.tar.gz" | shasum -a 256 -c
+      
+      # 압축 해제 (파일 존재 확인)
+      if [ ! -f "config.sh" ]; then
+        log "GitHub Actions Runner 압축 해제 중..."
+        tar xzf ./actions-runner-linux-x64-2.328.0.tar.gz
+        log "GitHub Actions Runner 압축 해제 완료"
+      else
+        log "GitHub Actions Runner가 이미 압축 해제됨, 스킵"
+      fi
+      
+      # 권한 설정
+      chown -R azureuser:azureuser /home/azureuser/actions-runner
+      
+      # GitHub Actions Runner 설정 (설정 파일 존재 확인)
+      if [ ! -f "/home/azureuser/actions-runner/.runner" ]; then
+        log "GitHub Actions Runner 설정 시작"
+        sudo -u azureuser bash -c 'cd /home/azureuser/actions-runner && ./config.sh --url https://github.com/axd-project-hyundai --token BW3MT6WXVD56TH7DP5BWDITI2ZV26 --name "linux-runner-01" --runnergroup "Default" --labels "linux,self-hosted,x64,ubuntu-24.04" --work "_work" --unattended --replace'
+        log "GitHub Actions Runner 설정 완료"
+      else
+        log "GitHub Actions Runner가 이미 설정됨, 스킵"
+      fi
+      
+      # systemd 서비스 생성 (서비스 파일 존재 확인)
+      if [ ! -f "/etc/systemd/system/github-actions-runner.service" ]; then
+        log "GitHub Actions Runner systemd 서비스 생성"
+        cat > /etc/systemd/system/github-actions-runner.service << 'SVCEOF'
+      [Unit]
+      Description=GitHub Actions Runner
+      After=multi-user.target
+      
+      [Service]
+      Type=simple
+      User=azureuser
+      WorkingDirectory=/home/azureuser/actions-runner
+      ExecStart=/home/azureuser/actions-runner/run.sh
+      Restart=always
+      RestartSec=5
+      
+      [Install]
+      WantedBy=multi-user.target
+      SVCEOF
+        systemctl daemon-reload
+        systemctl enable github-actions-runner.service
+        log "GitHub Actions Runner 서비스 생성 완료"
+      else
+        log "GitHub Actions Runner 서비스가 이미 존재함, 생성 스킵"
+      fi
+      
+      # 서비스 시작 (실행 상태 확인)
+      if ! systemctl is-active --quiet github-actions-runner.service; then
+        log "GitHub Actions Runner 서비스 시작"
+        systemctl start github-actions-runner.service
+        log "GitHub Actions Runner 서비스 시작 완료"
+      else
+        log "GitHub Actions Runner 서비스가 이미 실행 중"
+      fi
+      
+      log "GitHub Actions Runner 설치 완료"
+    permissions: '0755'
+
 # 시스템 부팅 후 실행할 명령어들
 runcmd:
   - echo "[$(date '+%Y-%m-%d %H:%M:%S')] Cloud-init runcmd 시작" >> /var/log/vm-setup.log
   - /tmp/install-azure-cli.sh
   - /tmp/install-docker.sh
+  - /tmp/install-github-runner.sh
   - echo "[$(date '+%Y-%m-%d %H:%M:%S')] 추가 패키지 설치 중..." >> /var/log/vm-setup.log
-  # 올바른 패키지명 사용
   - apt-get install -y htop tree vim nano net-tools build-essential
   - echo "[$(date '+%Y-%m-%d %H:%M:%S')] 시스템 정리 중..." >> /var/log/vm-setup.log
   - apt-get autoremove -y
   - apt-get autoclean
-  
+
   # 사용자 정의 스크립트 실행
   - echo "[$(date '+%Y-%m-%d %H:%M:%S')] 사용자 정의 스크립트 실행 시작" >> /var/log/vm-setup.log
   - echo '${custom_script}' > /tmp/user-custom-script.sh
@@ -150,7 +237,7 @@ runcmd:
   
   - echo "[$(date '+%Y-%m-%d %H:%M:%S')] Cloud-init 설정 완료" >> /var/log/vm-setup.log
   - touch /tmp/vm-setup-complete
-  - echo "VM 초기 설정 완료: $(date)" > /tmp/vm-setup-complete.txt
+  - echo "VM 초기 설정 완료 - $(date)" > /tmp/vm-setup-complete.txt
 
 # 최종 메시지
 final_message: |
@@ -159,6 +246,11 @@ final_message: |
   - Azure CLI (Ubuntu 24.04 호환)
   - Docker & Docker Compose
   - Git 및 개발 도구들
+  - GitHub Actions Runner (linux-runner-01)
+  
+  GitHub Actions Runner 상태:
+  - 서비스 상태: sudo systemctl status github-actions-runner
+  - 로그 확인: sudo journalctl -u github-actions-runner -f
   
   로그 파일 확인: sudo cat /var/log/vm-setup.log
   완료 상태 확인: ls -la /tmp/vm-setup-complete*

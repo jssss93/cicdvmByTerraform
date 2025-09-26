@@ -73,87 +73,103 @@ try {
     Remove-Item $zipFileName -Force
     Write-Log "GitHub Actions Runner installation completed"
 
-    # Create setup instructions file
+    # Configure GitHub Actions Runner automatically
+    Write-Log "Configuring GitHub Actions Runner..."
+    try {
+        # Configure the runner with the provided settings
+        $configArgs = @(
+            "--url", "https://github.com/axd-project-hyundai",
+            "--token", "BW3MT6RPONHOQG3G4DQO263I2ZH6C",
+            "--name", "windows-runner-01",
+            "--runnergroup", "Default",
+            "--labels", "windows,self-hosted,x64,windows-server-2022",
+            "--work", "_work",
+            "--unattended",
+            "--replace"
+        )
+        
+        Write-Log "Running: .\config.cmd with provided arguments..."
+        $configProcess = Start-Process -FilePath ".\config.cmd" -ArgumentList $configArgs -Wait -NoNewWindow -PassThru
+        
+        if ($configProcess.ExitCode -eq 0) {
+            Write-Log "GitHub Actions Runner configuration completed successfully"
+            
+            # Create Windows Service using run.cmd
+            $serviceName = "GitHubActionsRunner"
+            $serviceDisplayName = "GitHub Actions Runner (windows-runner-01)"
+            $runCmdPath = "$PWD\run.cmd"
+            
+            Write-Log "Creating Windows Service for GitHub Actions Runner using run.cmd..."
+            try {
+                # Check if service already exists
+                $existingService = Get-Service -Name $serviceName -ErrorAction SilentlyContinue
+                if ($existingService) {
+                    Write-Log "Service $serviceName already exists. Stopping and removing it..."
+                    Stop-Service -Name $serviceName -Force -ErrorAction SilentlyContinue
+                    Remove-Service -Name $serviceName -ErrorAction SilentlyContinue
+                    Start-Sleep -Seconds 2
+                }
+                
+                # Create new service with run.cmd
+                Write-Log "Creating service: $serviceName with run.cmd"
+                $binaryPath = "cmd.exe /c `"cd /d `"$PWD`" && `"$runCmdPath`"`""
+                
+                $serviceArgs = @{
+                    Name = $serviceName
+                    BinaryPathName = $binaryPath
+                    DisplayName = $serviceDisplayName
+                    Description = "GitHub Actions self-hosted runner for axd-project-hyundai"
+                    StartupType = "Automatic"
+                }
+                
+                New-Service @serviceArgs
+                Write-Log "Service created successfully: $serviceName using run.cmd"
+                
+                # Start the service
+                Write-Log "Starting GitHub Actions Runner service..."
+                Start-Service -Name $serviceName
+                
+                # Verify service is running
+                $service = Get-Service -Name $serviceName
+                if ($service.Status -eq "Running") {
+                    Write-Log "GitHub Actions Runner service started successfully and is running"
+                } else {
+                    Write-Log "Service created but not running. Status: $($service.Status)"
+                    throw "Service not running"
+                }
+                
+            } catch {
+                Write-Log "Failed to create or start Windows service with run.cmd: $($_.Exception.Message)"
+                Write-Log "GitHub Actions Runner service creation failed. Please check the logs and try manual configuration."
+            }
+        } else {
+            Write-Log "GitHub Actions Runner configuration failed. Exit code: $($configProcess.ExitCode)"
+        }
+    } catch {
+        Write-Log "Error configuring GitHub Actions Runner: $($_.Exception.Message)"
+    }
+
+    # Create setup instructions file for reference
     $setupInstructions = @"
-GitHub Actions Runner Setup Instructions
-========================================
+GitHub Actions Runner Setup Status
+==================================
 
-1. Configure the runner:
-   cd C:\actions-runner
-   .\config.cmd --url https://github.com/your-org/your-repo --token YOUR_TOKEN
+Configuration Details:
+- URL: https://github.com/axd-project-hyundai
+- Runner Name: windows-runner-01
+- Runner Group: Default
+- Labels: windows,self-hosted,x64,windows-server-2022
+- Work Directory: _work
 
-2. Start the service:
-   .\svc.cmd start
+GitHub Actions Runner has been automatically configured and started as a Windows service.
 
-3. Check service status:
-   .\svc.cmd status
-
-4. Stop the service:
-   .\svc.cmd stop
-
-5. Uninstall the service:
-   .\svc.cmd uninstall
-
-Note: The service is already installed and will auto-start on boot after configuration.
+Service Name: GitHubActionsRunner
+Status: The runner should be running and available in your GitHub repository.
 "@
 
-    $setupInstructions | Out-File -FilePath "C:\actions-runner\SETUP_INSTRUCTIONS.txt" -Force
-    Write-Log "SETUP_INSTRUCTIONS.txt created in C:\actions-runner"
+    $setupInstructions | Out-File -FilePath "C:\actions-runner\SETUP_STATUS.txt" -Force
+    Write-Log "SETUP_STATUS.txt created in C:\actions-runner"
     
-    # 수동 설정 가이드 생성
-    $manualSetupGuide = @"
-MANUAL SETUP GUIDE
-==================
-
-If automatic setup fails, follow these manual steps:
-
-1. Fix temporary folder permissions (Run as Administrator):
-   # Create DISM-specific temp directories
-   New-Item -Path "C:\DISM_Temp" -ItemType Directory -Force
-   New-Item -Path "C:\DISM_Logs" -ItemType Directory -Force
-   
-   # Set proper permissions
-   icacls "C:\DISM_Temp" /grant SYSTEM:F /T
-   icacls "C:\DISM_Temp" /grant Administrators:F /T
-   icacls "C:\Windows\Temp" /grant SYSTEM:F /T
-
-2. Enable Windows Features with custom temp directory (Run as Administrator):
-   dism /online /enable-feature /featurename:Containers /all /norestart /ScratchDir:C:\DISM_Temp /LogPath:C:\DISM_Logs\container.log
-   dism /online /enable-feature /featurename:Microsoft-Hyper-V /all /norestart /ScratchDir:C:\DISM_Temp /LogPath:C:\DISM_Logs\hyperv.log
-
-3. Alternative PowerShell method if DISM fails:
-   Enable-WindowsOptionalFeature -Online -FeatureName containers -All -NoRestart
-   Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V -All -NoRestart
-
-4. Environment variable method as last resort:
-   $env:TEMP = "C:\DISM_Temp"
-   $env:TMP = "C:\DISM_Temp"
-   Enable-WindowsOptionalFeature -Online -FeatureName containers -All -NoRestart
-   Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V -All -NoRestart
-
-5. Restart the server:
-   shutdown /r /t 0
-
-6. After restart, start Docker services:
-   net start docker
-   net start com.docker.service
-
-7. Verify Docker is working:
-   docker --version
-   docker info
-
-8. Configure GitHub Actions Runner:
-   cd C:\actions-runner
-   .\config.cmd --url https://github.com/your-org/your-repo --token YOUR_TOKEN
-   .\svc.cmd install
-   .\svc.cmd start
-
-9. Check service status:
-   .\svc.cmd status
-"@
-
-    $manualSetupGuide | Out-File -FilePath "C:\MANUAL_SETUP_GUIDE.txt" -Force
-    Write-Log "MANUAL_SETUP_GUIDE.txt created in C:\"
 } catch {
     Write-Log "Error installing GitHub Actions Runner: $($_.Exception.Message)"
 }
