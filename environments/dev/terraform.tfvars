@@ -93,10 +93,39 @@ public_ip_sku = "Standard"
 # 서브넷 설정 (기존 사용)
 use_existing_subnet = true
 
-# NSG 설정 (환경별)
-use_existing_nsg = true
-existing_nsg_name = "ict-dev-kttranslator-compute-nsg-kc"
+# NSG 설정 (CI/CD용 새로 생성)
+use_existing_nsg = false
+create_new_nsg = true
+nsg_name = "ict-dev-kttranslator-cicd-nsg-kc"
 associate_subnet_nsg = true
+
+# CI/CD용 NSG 보안 규칙 설정
+nsg_security_rules = [
+  {
+    name                       = "AllowHTTPS"
+    priority                   = 1030
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_range     = "443"
+    source_address_prefix      = "*"
+    destination_address_prefix = "*"
+    description                = "Allow HTTPS for secure web services"
+  },
+  {
+    name                       = "AllowOutboundInternet"
+    priority                   = 2000
+    direction                  = "Outbound"
+    access                     = "Allow"
+    protocol                   = "*"
+    source_port_range          = "*"
+    destination_port_range     = "*"
+    source_address_prefix      = "*"
+    destination_address_prefix = "Internet"
+    description                = "Allow outbound internet access for CI/CD"
+  }
+]
 
 # ========================================
 # 진단 설정 (dev 환경)
@@ -112,5 +141,39 @@ create_diagnostic_storage_account = false
 
 # 진단용 Action Group 생성 (선택적)
 create_diagnostic_action_group = false
+
+# ========================================
+# VM 관리 ID 역할 할당 설정
+# ========================================
+enable_managed_identity = true
+managed_identity_type = "SystemAssigned"
+
+# VM 관리 ID에 할당할 역할들
+role_assignments = {
+  "storage-blob-data-contributor" = {
+    role_definition_name = "Storage Blob Data Contributor"
+    scope = "/subscriptions/d69e62aa-ef39-4bc0-b745-57ebc2bddcc8/resourceGroups/rg-az01-poc-hyundai.teams-01"
+  }
+  "acr-pull" = {
+    role_definition_name = "AcrPull"
+    scope = "/subscriptions/d69e62aa-ef39-4bc0-b745-57ebc2bddcc8/resourceGroups/rg-az01-poc-hyundai.teams-01"
+  }
+  "log-analytics-contributor" = {
+    role_definition_name = "Log Analytics Contributor"
+    scope = "/subscriptions/d69e62aa-ef39-4bc0-b745-57ebc2bddcc8/resourceGroups/rg-az01-poc-hyundai.teams-01"
+  }
+  "monitoring-metrics-publisher" = {
+    role_definition_name = "Monitoring Metrics Publisher"
+    scope = "/subscriptions/d69e62aa-ef39-4bc0-b745-57ebc2bddcc8/resourceGroups/rg-az01-poc-hyundai.teams-01"
+  }
+  "virtual-machine-contributor" = {
+    role_definition_name = "Virtual Machine Contributor"
+    scope = "/subscriptions/d69e62aa-ef39-4bc0-b745-57ebc2bddcc8/resourceGroups/rg-az01-poc-hyundai.teams-01"
+  }
+  "network-contributor" = {
+    role_definition_name = "Network Contributor"
+    scope = "/subscriptions/d69e62aa-ef39-4bc0-b745-57ebc2bddcc8/resourceGroups/rg-az01-poc-hyundai.teams-01"
+  }
+}
 
 

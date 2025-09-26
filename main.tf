@@ -237,7 +237,7 @@ module "linux_vm" {
   nsg_id                      = module.network.nsg_id
   existing_vnet_name          = var.existing_vnet_name
   existing_subnet_name        = module.network.subnet_name
-  existing_nsg_name           = module.network.nsg_name
+  existing_nsg_name           = null  # 새로 생성하는 NSG이므로 null로 설정
   linux_public_ip_id          = module.network.linux_public_ip_id
   
   # 이미지 설정
@@ -298,7 +298,7 @@ module "windows_vm" {
   nsg_id                      = module.network.nsg_id
   existing_vnet_name          = var.existing_vnet_name
   existing_subnet_name        = module.network.subnet_name
-  existing_nsg_name           = module.network.nsg_name
+  existing_nsg_name           = null  # 새로 생성하는 NSG이므로 null로 설정
   windows_public_ip_id        = module.network.windows_public_ip_id
   
   # 이미지 설정
