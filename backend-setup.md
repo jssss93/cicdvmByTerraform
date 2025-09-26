@@ -82,10 +82,6 @@ terraform {
 terraform init \
   -backend-config="key=dev/terraform.tfstate"
 
-# HMC 환경  
-terraform init \
-  -backend-config="key=hmc/terraform.tfstate"
-
 # POC 환경
 terraform init \
   -backend-config="key=poc/terraform.tfstate"
@@ -98,11 +94,6 @@ terraform init \
 terraform workspace select dev || terraform workspace new dev
 terraform plan -var-file=environments/dev/terraform.tfvars
 terraform apply -var-file=environments/dev/terraform.tfvars
-
-# HMC 환경
-terraform workspace select hmc || terraform workspace new hmc
-terraform plan -var-file=environments/hmc/terraform.tfvars
-terraform apply -var-file=environments/hmc/terraform.tfvars
 
 # POC 환경
 terraform workspace select poc || terraform workspace new poc

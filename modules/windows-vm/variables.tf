@@ -57,35 +57,7 @@ variable "os_disk_size_gb" {
 }
 
 # 데이터 디스크 설정
-variable "create_data_disk" {
-  description = "데이터 디스크 생성 여부"
-  type        = bool
-  default     = false
-}
-
-variable "data_disk_size_gb" {
-  description = "데이터 디스크 크기 (GB)"
-  type        = number
-  default     = 32
-}
-
-variable "data_disk_storage_account_type" {
-  description = "데이터 디스크 스토리지 계정 유형"
-  type        = string
-  default     = "Premium_LRS"
-}
-
-variable "data_disk_caching" {
-  description = "데이터 디스크 캐싱 설정"
-  type        = string
-  default     = "ReadWrite"
-}
-
-variable "data_disk_lun" {
-  description = "데이터 디스크 LUN"
-  type        = number
-  default     = 0
-}
+# 데이터 디스크 설정 - 사용하지 않음
 
 # 관리자 계정 설정
 variable "admin_username" {
@@ -95,10 +67,13 @@ variable "admin_username" {
 }
 
 variable "admin_password" {
-  description = "VM 관리자 비밀번호 (지정하지 않으면 자동 생성)"
+  description = "VM 관리자 비밀번호 (필수)"
   type        = string
-  default     = null
   sensitive   = true
+  validation {
+    condition     = length(var.admin_password) >= 12
+    error_message = "비밀번호는 최소 12자 이상이어야 합니다."
+  }
 }
 
 # 네트워킹 설정
@@ -132,22 +107,10 @@ variable "existing_nsg_name" {
   default     = null
 }
 
-variable "create_public_ip" {
-  description = "공용 IP 생성 여부"
-  type        = bool
-  default     = true
-}
-
-variable "public_ip_allocation_method" {
-  description = "공용 IP 할당 방법"
+variable "windows_public_ip_id" {
+  description = "Windows VM용 공용 IP ID (네트워크 모듈에서 전달)"
   type        = string
-  default     = "Static"
-}
-
-variable "public_ip_sku" {
-  description = "공용 IP SKU"
-  type        = string
-  default     = "Standard"
+  default     = null
 }
 
 # 이미지 설정

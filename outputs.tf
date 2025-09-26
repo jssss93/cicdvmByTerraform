@@ -188,33 +188,8 @@ output "vm_configuration" {
 }
 
 # ========================================
-# 데이터 디스크 출력
+# 데이터 디스크 출력 - 사용하지 않음
 # ========================================
-output "data_disk_created" {
-  description = "데이터 디스크 생성 여부"
-  value       = var.create_data_disk
-}
-
-output "windows_data_disk_ids" {
-  description = "Windows VM 데이터 디스크 ID 목록"
-  value       = var.create_windows_vm ? module.windows_vm.windows_data_disk_ids : []
-}
-
-output "linux_data_disk_ids" {
-  description = "Linux VM 데이터 디스크 ID 목록"
-  value       = var.create_linux_vm ? module.linux_vm.linux_data_disk_ids : []
-}
-
-output "data_disk_configuration" {
-  description = "데이터 디스크 설정 정보"
-  value = {
-    created = var.create_data_disk
-    size_gb = var.data_disk_size_gb
-    storage_account_type = var.data_disk_storage_account_type
-    caching = var.data_disk_caching
-    lun = var.data_disk_lun
-  }
-}
 
 # ========================================
 # 관리 ID 출력
@@ -262,4 +237,80 @@ output "vm_connection_info" {
     linux_ssh   = var.create_linux_vm && var.create_public_ip ? module.linux_vm.linux_ssh_connection : null
     windows_rdp = var.create_windows_vm && var.create_public_ip ? module.windows_vm.windows_rdp_connection : null
   }
+}
+
+# ========================================
+# 네트워크 모듈 출력
+# ========================================
+output "network_public_ips" {
+  description = "네트워크 모듈에서 생성된 공용 IP 정보"
+  value = {
+    ids      = module.network.public_ip_ids
+    addresses = module.network.public_ip_addresses
+    names    = module.network.public_ip_names
+    fqdns    = module.network.public_ip_fqdns
+  }
+}
+
+output "network_subnets" {
+  description = "네트워크 모듈에서 관리하는 서브넷 정보"
+  value = {
+    ids                = module.network.subnet_ids
+    names              = module.network.subnet_names
+    address_prefixes   = module.network.subnet_address_prefixes
+  }
+}
+
+output "network_nsgs" {
+  description = "네트워크 모듈에서 관리하는 NSG 정보"
+  value = {
+    ids   = module.network.nsg_ids
+    names = module.network.nsg_names
+  }
+}
+
+output "network_configuration" {
+  description = "네트워크 설정 정보"
+  value       = module.network.network_configuration
+}
+
+# ========================================
+# 진단 설정 출력
+# ========================================
+output "diagnostic_enabled" {
+  description = "진단 설정 활성화 여부"
+  value       = var.enable_diagnostic_settings
+}
+
+output "log_analytics_workspace_info" {
+  description = "Log Analytics Workspace 정보"
+  value = var.enable_diagnostic_settings ? {
+    id    = module.diagnostic[0].log_analytics_workspace_id
+    name  = module.diagnostic[0].log_analytics_workspace_name
+  } : null
+}
+
+output "diagnostic_storage_account_info" {
+  description = "진단용 Storage Account 정보"
+  value = var.enable_diagnostic_settings && var.create_diagnostic_storage_account ? {
+    id    = module.diagnostic[0].storage_account_id
+    name  = module.diagnostic[0].storage_account_name
+  } : null
+}
+
+output "diagnostic_action_group_info" {
+  description = "진단용 Action Group 정보"
+  value = var.enable_diagnostic_settings && var.create_diagnostic_action_group ? {
+    id    = module.diagnostic[0].action_group_id
+    name  = module.diagnostic[0].action_group_name
+  } : null
+}
+
+output "diagnostic_settings_info" {
+  description = "진단 설정 정보"
+  value = var.enable_diagnostic_settings ? {
+    settings_count = length(module.diagnostic[0].diagnostic_setting_ids)
+    settings_names = module.diagnostic[0].diagnostic_setting_names
+    configuration  = module.diagnostic[0].diagnostic_configuration
+  } : null
 }

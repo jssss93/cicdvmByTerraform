@@ -12,8 +12,8 @@ output "linux_vm_names" {
 }
 
 output "linux_public_ips" {
-  description = "Linux VM 공용 IP 주소 목록"
-  value       = var.create_public_ip ? azurerm_public_ip.linux_vm[*].ip_address : []
+  description = "Linux VM 공용 IP 주소 목록 (네트워크 모듈에서 관리)"
+  value       = var.linux_public_ip_id != null ? [var.linux_public_ip_id] : []
 }
 
 output "linux_private_ips" {
@@ -34,7 +34,7 @@ output "linux_vm_name" {
 
 output "linux_vm_public_ip" {
   description = "첫 번째 Linux VM 공용 IP 주소 (하위 호환성)"
-  value       = var.create_public_ip && length(azurerm_public_ip.linux_vm) > 0 ? azurerm_public_ip.linux_vm[0].ip_address : null
+  value       = var.linux_public_ip_id
 }
 
 output "linux_vm_private_ip" {
@@ -42,25 +42,21 @@ output "linux_vm_private_ip" {
   value       = length(azurerm_network_interface.linux_vm) > 0 ? azurerm_network_interface.linux_vm[0].private_ip_address : null
 }
 
-# 연결 정보
+# 연결 정보 (네트워크 모듈에서 관리)
 output "linux_ssh_connections" {
   description = "Linux VM SSH 연결 명령어 목록"
-  value = var.create_public_ip ? [
-    for ip in azurerm_public_ip.linux_vm[*].ip_address : 
-    "ssh ${var.admin_username}@${ip}"
+  value = var.linux_public_ip_id != null ? [
+    "ssh ${var.admin_username}@<public-ip-address>"
   ] : []
 }
 
 output "linux_ssh_connection" {
   description = "첫 번째 Linux VM SSH 연결 명령어 (하위 호환성)"
-  value = var.create_public_ip && length(azurerm_public_ip.linux_vm) > 0 ? "ssh ${var.admin_username}@${azurerm_public_ip.linux_vm[0].ip_address}" : null
+  value = var.linux_public_ip_id != null ? "ssh ${var.admin_username}@<public-ip-address>" : null
 }
 
 # 데이터 디스크 정보
-output "linux_data_disk_ids" {
-  description = "Linux VM 데이터 디스크 ID 목록"
-  value       = var.create_data_disk ? azurerm_managed_disk.linux_data_disk[*].id : []
-}
+# 데이터 디스크 출력 - 사용하지 않음
 
 # 관리 ID 정보
 output "linux_vm_principal_ids" {
@@ -79,6 +75,6 @@ output "admin_username" {
 
 output "admin_password" {
   description = "VM 관리자 비밀번호"
-  value       = var.admin_password != null ? var.admin_password : (length(random_password.vm_password) > 0 ? random_password.vm_password[0].result : null)
+  value       = var.admin_password
   sensitive   = true
 }

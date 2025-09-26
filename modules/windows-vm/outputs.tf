@@ -12,8 +12,8 @@ output "windows_vm_names" {
 }
 
 output "windows_public_ips" {
-  description = "Windows VM 공용 IP 주소 목록"
-  value       = var.create_public_ip ? azurerm_public_ip.windows_vm[*].ip_address : []
+  description = "Windows VM 공용 IP 주소 목록 (네트워크 모듈에서 관리)"
+  value       = var.windows_public_ip_id != null ? [var.windows_public_ip_id] : []
 }
 
 output "windows_private_ips" {
@@ -34,7 +34,7 @@ output "windows_vm_name" {
 
 output "windows_vm_public_ip" {
   description = "첫 번째 Windows VM 공용 IP 주소 (하위 호환성)"
-  value       = var.create_public_ip && length(azurerm_public_ip.windows_vm) > 0 ? azurerm_public_ip.windows_vm[0].ip_address : null
+  value       = var.windows_public_ip_id
 }
 
 output "windows_vm_private_ip" {
@@ -42,25 +42,21 @@ output "windows_vm_private_ip" {
   value       = length(azurerm_network_interface.windows_vm) > 0 ? azurerm_network_interface.windows_vm[0].private_ip_address : null
 }
 
-# 연결 정보
+# 연결 정보 (네트워크 모듈에서 관리)
 output "windows_rdp_connections" {
   description = "Windows VM RDP 연결 명령어 목록"
-  value = var.create_public_ip ? [
-    for ip in azurerm_public_ip.windows_vm[*].ip_address : 
-    "mstsc /v:${ip}"
+  value = var.windows_public_ip_id != null ? [
+    "mstsc /v:<public-ip-address>"
   ] : []
 }
 
 output "windows_rdp_connection" {
   description = "첫 번째 Windows VM RDP 연결 명령어 (하위 호환성)"
-  value = var.create_public_ip && length(azurerm_public_ip.windows_vm) > 0 ? "mstsc /v:${azurerm_public_ip.windows_vm[0].ip_address}" : null
+  value = var.windows_public_ip_id != null ? "mstsc /v:<public-ip-address>" : null
 }
 
 # 데이터 디스크 정보
-output "windows_data_disk_ids" {
-  description = "Windows VM 데이터 디스크 ID 목록"
-  value       = var.create_data_disk ? azurerm_managed_disk.windows_data_disk[*].id : []
-}
+# 데이터 디스크 출력 - 사용하지 않음
 
 # 관리 ID 정보
 output "windows_vm_principal_ids" {
@@ -79,7 +75,7 @@ output "admin_username" {
 
 output "admin_password" {
   description = "VM 관리자 비밀번호"
-  value       = var.admin_password != null ? var.admin_password : (length(random_password.vm_password) > 0 ? random_password.vm_password[0].result : null)
+  value       = var.admin_password
   sensitive   = true
 }
 

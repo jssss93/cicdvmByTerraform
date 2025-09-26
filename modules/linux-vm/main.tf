@@ -40,24 +40,8 @@ locals {
   }) : null
 }
 
-# 랜덤 패스워드 생성 (admin_password가 제공되지 않은 경우)
-resource "random_password" "vm_password" {
-  count   = var.admin_password == null ? 1 : 0
-  length  = 16
-  special = true
-}
 
-# Linux VM용 Public IP
-resource "azurerm_public_ip" "linux_vm" {
-  count               = var.create_public_ip ? var.linux_vm_count : 0
-  name                = "${length(var.linux_vm_names) > count.index ? var.linux_vm_names[count.index] : "${var.vm_name_prefix}-linux-${count.index + 1}"}-pip"
-  resource_group_name = var.resource_group_name
-  location            = var.location
-  allocation_method   = var.public_ip_allocation_method
-  sku                 = var.public_ip_sku
-
-  tags = var.tags
-}
+# Linux VM용 Public IP는 네트워크 모듈에서 관리
 
 # Linux VM용 Network Interface
 resource "azurerm_network_interface" "linux_vm" {
@@ -70,7 +54,7 @@ resource "azurerm_network_interface" "linux_vm" {
     name                          = "internal"
     subnet_id                     = local.subnet_id
     private_ip_address_allocation = "Dynamic"
-    public_ip_address_id          = var.create_public_ip ? azurerm_public_ip.linux_vm[count.index].id : null
+    public_ip_address_id          = var.linux_public_ip_id
   }
 
   tags = var.tags
@@ -92,8 +76,8 @@ resource "azurerm_linux_virtual_machine" "main" {
   size                = var.linux_vm_size
   admin_username      = var.admin_username
 
-  disable_password_authentication = var.disable_password_authentication
-  admin_password                  = var.disable_password_authentication ? null : (var.admin_password != null ? var.admin_password : random_password.vm_password[0].result)
+  disable_password_authentication = false
+  admin_password                  = var.admin_password
 
   availability_set_id = var.availability_set_id
   zone               = var.availability_zone
@@ -101,9 +85,9 @@ resource "azurerm_linux_virtual_machine" "main" {
   # Cloud-init 스크립트 주입
   custom_data = var.install_azure_cli ? base64encode(local.cloud_init_script) : null
 
-  # SSH 키 설정 (비밀번호 인증이 비활성화된 경우)
+  # SSH 키 설정 (선택적)
   dynamic "admin_ssh_key" {
-    for_each = var.disable_password_authentication && var.ssh_public_key != null ? [1] : []
+    for_each = var.ssh_public_key != null ? [1] : []
     content {
       username   = var.admin_username
       public_key = var.ssh_public_key
@@ -148,27 +132,7 @@ resource "azurerm_linux_virtual_machine" "main" {
   tags = var.tags
 }
 
-# Linux VM 데이터 디스크 생성
-resource "azurerm_managed_disk" "linux_data_disk" {
-  count                = var.create_data_disk ? var.linux_vm_count : 0
-  name                 = "${length(var.linux_vm_names) > count.index ? var.linux_vm_names[count.index] : "${var.vm_name_prefix}-linux-${count.index + 1}"}-data-disk"
-  location             = var.location
-  resource_group_name  = var.resource_group_name
-  storage_account_type = var.data_disk_storage_account_type
-  create_option        = "Empty"
-  disk_size_gb         = var.data_disk_size_gb
-
-  tags = var.tags
-}
-
-# Linux VM 데이터 디스크 연결
-resource "azurerm_virtual_machine_data_disk_attachment" "linux_data_disk" {
-  count              = var.create_data_disk ? var.linux_vm_count : 0
-  managed_disk_id    = azurerm_managed_disk.linux_data_disk[count.index].id
-  virtual_machine_id = azurerm_linux_virtual_machine.main[count.index].id
-  lun                = var.data_disk_lun
-  caching            = var.data_disk_caching
-}
+# Linux VM 데이터 디스크 - 사용하지 않음
 
 # Linux VM 확장 설치
 resource "azurerm_virtual_machine_extension" "linux_extensions" {

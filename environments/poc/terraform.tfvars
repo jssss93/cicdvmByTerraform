@@ -20,9 +20,9 @@ use_existing_resource_group = true
 existing_resource_group_name = "rg-az01-poc-hyundai.teams-01"
 
 # 기존 네트워킹 리소스 이름으로 설정
-existing_vnet_name = "ict-poc-kttranslator-vnet-kc"
+existing_vnet_name = "ict-dev-kttranslator-vnet-kc"
 existing_subnet_name = "subnet-computing"
-existing_nsg_name = "ict-poc-kttranslator-nsg-kc-compute"
+# existing_nsg_name은 하단 환경별 NSG 설정에서 정의
 
 # ========================================
 # VM 설정 - Windows Server 2022 CI/CD 서버 스펙
@@ -47,24 +47,15 @@ linux_storage_account_type = "Premium_LRS"    # Premium SSD
 # OS 디스크 크기 - 128 GiB
 os_disk_size_gb = 128
 
-# 데이터 디스크 설정 - 32 GiB Premium SSD
-create_data_disk = true
-data_disk_size_gb = 32
-data_disk_storage_account_type = "Premium_LRS"
-data_disk_caching = "ReadWrite"
-data_disk_lun = 0
+# 데이터 디스크 설정 - 사용하지 않음
 
 # 관리자 계정
 admin_username = "cjs"
-admin_password = "1q2w3e4r####"  # 강력한 비밀번호 설정
+admin_password = "1q2w3e4r####"  # 필수: 최소 12자 이상
 
 # ========================================
 # 네트워킹 설정 - 기존 인프라 활용
 # ========================================
-create_public_ip = true
-public_ip_allocation_method = "Static"
-public_ip_sku = "Standard"
-
 # 기존 NSG 사용 (이름으로 지정 가능)
 # existing_nsg_name = "your-existing-nsg-name"
 
@@ -202,6 +193,43 @@ enable_diagnostic_settings = true  # VM 진단 설정 활성화
 # 기존 Log Analytics Workspace 사용
 log_analytics_workspace_name = "ict-poc-kttranslator-law-kc"
 log_analytics_resource_group_name = "rg-az01-poc-hyundai.teams-01"
+
+# ========================================
+# 네트워크 설정 (poc 환경)
+# ========================================
+# 공용 IP 설정
+create_public_ip = true
+# PIP는 VM별로 개별 생성됨 (Linux, Windows 각각)
+public_ip_name_prefix = "ict-poc-kttranslator-pip"
+public_ip_allocation_method = "Static"
+public_ip_sku = "Standard"
+
+# 서브넷 설정 (기존 사용)
+use_existing_subnet = true
+existing_subnet_name = "subnet-computing"
+
+# NSG 설정 (환경별)
+use_existing_nsg = true
+existing_nsg_name = "ict-dev-kttranslator-management-nsg-kc"  # POC: Management NSG
+associate_subnet_nsg = true
+
+# ========================================
+# 진단 설정 (poc 환경)
+# ========================================
+enable_diagnostic_settings = true
+use_existing_log_analytics_workspace = true
+log_analytics_workspace_name = "ict-poc-kttranslator-law-kc"
+log_analytics_resource_group_name = "rg-az01-poc-hyundai.teams-01"
+log_analytics_retention_days = 60  # POC는 더 긴 보존 기간
+
+# 진단용 Storage Account 생성 (POC는 활성화)
+create_diagnostic_storage_account = true
+diagnostic_storage_account_name = "stpocdiagnostic${random_string.suffix.result}"
+
+# 진단용 Action Group 생성 (POC는 활성화)
+create_diagnostic_action_group = true
+diagnostic_action_group_name = "poc-diagnostic-action-group"
+
 
 # ========================================
 # 고급 설정

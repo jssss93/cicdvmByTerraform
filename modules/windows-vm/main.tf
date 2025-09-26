@@ -31,24 +31,9 @@ locals {
   
 }
 
-# 랜덤 패스워드 생성 (admin_password가 제공되지 않은 경우)
-resource "random_password" "vm_password" {
-  count   = var.admin_password == null ? 1 : 0
-  length  = 16
-  special = true
-}
 
 # Windows VM용 Public IP
-resource "azurerm_public_ip" "windows_vm" {
-  count               = var.create_public_ip ? var.windows_vm_count : 0
-  name                = "${length(var.windows_vm_names) > count.index ? var.windows_vm_names[count.index] : "${var.vm_name_prefix}-windows-${count.index + 1}"}-pip"
-  resource_group_name = var.resource_group_name
-  location            = var.location
-  allocation_method   = var.public_ip_allocation_method
-  sku                 = var.public_ip_sku
-
-  tags = var.tags
-}
+# Windows VM용 Public IP는 네트워크 모듈에서 관리
 
 # Windows VM용 Network Interface
 resource "azurerm_network_interface" "windows_vm" {
@@ -61,7 +46,7 @@ resource "azurerm_network_interface" "windows_vm" {
     name                          = "internal"
     subnet_id                     = local.subnet_id
     private_ip_address_allocation = "Dynamic"
-    public_ip_address_id          = var.create_public_ip ? azurerm_public_ip.windows_vm[count.index].id : null
+    public_ip_address_id          = var.windows_public_ip_id
   }
 
   tags = var.tags
@@ -83,7 +68,7 @@ resource "azurerm_windows_virtual_machine" "main" {
   location            = var.location
   size                = var.windows_vm_size
   admin_username      = var.admin_username
-  admin_password      = var.admin_password != null ? var.admin_password : random_password.vm_password[0].result
+  admin_password      = var.admin_password
 
   availability_set_id = var.availability_set_id
   zone               = var.availability_zone
@@ -127,27 +112,7 @@ resource "azurerm_windows_virtual_machine" "main" {
   tags = var.tags
 }
 
-# Windows VM 데이터 디스크 생성
-resource "azurerm_managed_disk" "windows_data_disk" {
-  count                = var.create_data_disk ? var.windows_vm_count : 0
-  name                 = "${length(var.windows_vm_names) > count.index ? var.windows_vm_names[count.index] : "${var.vm_name_prefix}-windows-${count.index + 1}"}-data-disk"
-  location             = var.location
-  resource_group_name  = var.resource_group_name
-  storage_account_type = var.data_disk_storage_account_type
-  create_option        = "Empty"
-  disk_size_gb         = var.data_disk_size_gb
-
-  tags = var.tags
-}
-
-# Windows VM 데이터 디스크 연결
-resource "azurerm_virtual_machine_data_disk_attachment" "windows_data_disk" {
-  count              = var.create_data_disk ? var.windows_vm_count : 0
-  managed_disk_id    = azurerm_managed_disk.windows_data_disk[count.index].id
-  virtual_machine_id = azurerm_windows_virtual_machine.main[count.index].id
-  lun                = var.data_disk_lun
-  caching            = var.data_disk_caching
-}
+# Windows VM 데이터 디스크 - 사용하지 않음
 
 # Windows VM 확장 설치
 resource "azurerm_virtual_machine_extension" "windows_extensions" {

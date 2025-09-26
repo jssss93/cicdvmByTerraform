@@ -4,12 +4,12 @@
 # 기본 설정
 # ========================================
 variable "environment" {
-  description = "환경 (dev, hmc, poc)"
+  description = "환경 (dev, poc)"
   type        = string
   default     = "dev"
   validation {
-    condition     = contains(["dev", "hmc", "poc"], var.environment)
-    error_message = "환경은 dev, hmc, poc 중 하나여야 합니다."
+    condition     = contains(["dev", "poc"], var.environment)
+    error_message = "환경은 dev, poc 중 하나여야 합니다."
   }
 }
 
@@ -91,6 +91,7 @@ variable "existing_nsg_name" {
   type        = string
   default     = null
 }
+
 
 # ========================================
 # 가상머신 기본 설정
@@ -201,51 +202,7 @@ variable "os_disk_size_gb" {
 # ========================================
 # 데이터 디스크 설정
 # ========================================
-variable "create_data_disk" {
-  description = "데이터 디스크 생성 여부"
-  type        = bool
-  default     = false
-}
-
-variable "data_disk_size_gb" {
-  description = "데이터 디스크 크기 (GB)"
-  type        = number
-  default     = 32
-  validation {
-    condition     = var.data_disk_size_gb >= 4 && var.data_disk_size_gb <= 32767
-    error_message = "데이터 디스크 크기는 4GB에서 32TB(32767GB) 사이여야 합니다."
-  }
-}
-
-variable "data_disk_storage_account_type" {
-  description = "데이터 디스크 스토리지 계정 유형"
-  type        = string
-  default     = "Premium_LRS"
-  validation {
-    condition     = contains(["Standard_LRS", "StandardSSD_LRS", "Premium_LRS"], var.data_disk_storage_account_type)
-    error_message = "데이터 디스크 스토리지 계정 유형은 Standard_LRS, StandardSSD_LRS, Premium_LRS 중 하나여야 합니다."
-  }
-}
-
-variable "data_disk_caching" {
-  description = "데이터 디스크 캐싱 설정"
-  type        = string
-  default     = "ReadWrite"
-  validation {
-    condition     = contains(["None", "ReadOnly", "ReadWrite"], var.data_disk_caching)
-    error_message = "데이터 디스크 캐싱은 None, ReadOnly, ReadWrite 중 하나여야 합니다."
-  }
-}
-
-variable "data_disk_lun" {
-  description = "데이터 디스크 LUN (Logical Unit Number)"
-  type        = number
-  default     = 0
-  validation {
-    condition     = var.data_disk_lun >= 0 && var.data_disk_lun <= 63
-    error_message = "데이터 디스크 LUN은 0에서 63 사이여야 합니다."
-  }
-}
+# 데이터 디스크 설정 - 사용하지 않음
 
 # ========================================
 # 관리자 계정 설정
@@ -257,16 +214,13 @@ variable "admin_username" {
 }
 
 variable "admin_password" {
-  description = "VM 관리자 비밀번호 (지정하지 않으면 자동 생성)"
+  description = "VM 관리자 비밀번호 (필수)"
   type        = string
-  default     = null
   sensitive   = true
-}
-
-variable "disable_password_authentication" {
-  description = "Linux VM 비밀번호 인증 비활성화 (SSH 키 사용)"
-  type        = bool
-  default     = false
+  validation {
+    condition     = length(var.admin_password) >= 12
+    error_message = "비밀번호는 최소 12자 이상이어야 합니다."
+  }
 }
 
 variable "ssh_public_key" {
@@ -282,6 +236,13 @@ variable "create_public_ip" {
   description = "공용 IP 생성 여부"
   type        = bool
   default     = true
+}
+
+
+variable "public_ip_name_prefix" {
+  description = "공용 IP 이름 접두사"
+  type        = string
+  default     = "pip"
 }
 
 variable "public_ip_allocation_method" {
@@ -302,6 +263,136 @@ variable "public_ip_sku" {
     condition     = contains(["Basic", "Standard"], var.public_ip_sku)
     error_message = "공용 IP SKU는 Basic 또는 Standard여야 합니다."
   }
+}
+
+variable "public_ip_zones" {
+  description = "가용성 영역 목록"
+  type        = list(string)
+  default     = []
+}
+
+variable "public_ip_domain_name_label" {
+  description = "도메인 이름 라벨 (선택적)"
+  type        = string
+  default     = null
+}
+
+variable "public_ip_idle_timeout_in_minutes" {
+  description = "유휴 시간 초과 (분)"
+  type        = number
+  default     = 4
+  validation {
+    condition     = var.public_ip_idle_timeout_in_minutes >= 4 && var.public_ip_idle_timeout_in_minutes <= 30
+    error_message = "유휴 시간 초과는 4-30분 사이여야 합니다."
+  }
+}
+
+# ========================================
+# 서브넷 설정
+# ========================================
+variable "use_existing_subnet" {
+  description = "기존 서브넷 사용 여부"
+  type        = bool
+  default     = true
+}
+
+variable "create_new_subnet" {
+  description = "새 서브넷 생성 여부"
+  type        = bool
+  default     = false
+}
+
+variable "subnet_count" {
+  description = "생성할 서브넷 개수"
+  type        = number
+  default     = 1
+  validation {
+    condition     = var.subnet_count >= 0 && var.subnet_count <= 10
+    error_message = "서브넷 개수는 0-10 사이여야 합니다."
+  }
+}
+
+variable "subnet_name_prefix" {
+  description = "서브넷 이름 접두사"
+  type        = string
+  default     = "subnet"
+}
+
+variable "subnet_address_prefixes" {
+  description = "서브넷 주소 범위 목록 (CIDR)"
+  type        = list(string)
+  default     = []
+  validation {
+    condition = alltrue([
+      for prefix in var.subnet_address_prefixes : can(cidrhost(prefix, 0))
+    ])
+    error_message = "모든 주소 범위는 유효한 CIDR 형식이어야 합니다 (예: 100.0.0.176/28)."
+  }
+}
+
+variable "private_endpoint_network_policies_enabled" {
+  description = "프라이빗 엔드포인트 네트워크 정책 활성화 여부"
+  type        = bool
+  default     = false
+}
+
+variable "private_link_service_network_policies_enabled" {
+  description = "프라이빗 링크 서비스 네트워크 정책 활성화 여부"
+  type        = bool
+  default     = true
+}
+
+variable "subnet_service_delegations" {
+  description = "서브넷에 적용할 서비스 위임 목록"
+  type = list(object({
+    name         = string
+    service_name = string
+    actions      = list(string)
+  }))
+  default = []
+}
+
+# ========================================
+# NSG 설정
+# ========================================
+variable "use_existing_nsg" {
+  description = "기존 NSG 사용 여부"
+  type        = bool
+  default     = true
+}
+
+variable "create_new_nsg" {
+  description = "새 NSG 생성 여부"
+  type        = bool
+  default     = false
+}
+
+variable "nsg_name" {
+  description = "NSG 이름"
+  type        = string
+  default     = "nsg"
+}
+
+variable "nsg_security_rules" {
+  description = "NSG 보안 규칙 목록"
+  type = list(object({
+    name                       = string
+    priority                   = number
+    direction                  = string
+    access                     = string
+    protocol                   = string
+    source_port_range          = string
+    destination_port_range     = string
+    source_address_prefix      = string
+    destination_address_prefix = string
+  }))
+  default = []
+}
+
+variable "associate_subnet_nsg" {
+  description = "서브넷과 NSG 연결 여부"
+  type        = bool
+  default     = true
 }
 
 # ========================================
@@ -495,23 +586,6 @@ variable "enable_diagnostic_settings" {
   default     = false
 }
 
-variable "log_analytics_workspace_id" {
-  description = "기존 Log Analytics Workspace ID"
-  type        = string
-  default     = null
-}
-
-variable "log_analytics_workspace_name" {
-  description = "기존 Log Analytics Workspace 이름 (ID 대신 이름으로 조회 시 사용)"
-  type        = string
-  default     = null
-}
-
-variable "log_analytics_resource_group_name" {
-  description = "Log Analytics Workspace가 있는 리소스 그룹 이름 (이름으로 조회 시 필요)"
-  type        = string
-  default     = null
-}
 
 variable "diagnostic_logs_categories" {
   description = "수집할 진단 로그 카테고리 목록"
@@ -556,3 +630,69 @@ variable "automation_account_name" {
   type        = string
   default     = null
 }
+
+# ========================================
+# 진단 설정 (Diagnostic Settings) - 추가 설정
+# ========================================
+variable "use_existing_log_analytics_workspace" {
+  description = "기존 Log Analytics Workspace 사용 여부"
+  type        = bool
+  default     = true
+}
+
+variable "log_analytics_workspace_name" {
+  description = "Log Analytics Workspace 이름"
+  type        = string
+  default     = null
+}
+
+variable "log_analytics_resource_group_name" {
+  description = "Log Analytics Workspace가 있는 리소스 그룹 이름"
+  type        = string
+  default     = null
+}
+
+variable "log_analytics_sku" {
+  description = "Log Analytics Workspace SKU"
+  type        = string
+  default     = "PerGB2018"
+  validation {
+    condition     = contains(["Free", "PerNode", "PerGB2018", "Standard", "Premium"], var.log_analytics_sku)
+    error_message = "SKU는 Free, PerNode, PerGB2018, Standard, Premium 중 하나여야 합니다."
+  }
+}
+
+variable "log_analytics_retention_days" {
+  description = "Log Analytics Workspace 보존 기간 (일)"
+  type        = number
+  default     = 30
+  validation {
+    condition     = var.log_analytics_retention_days >= 30 && var.log_analytics_retention_days <= 730
+    error_message = "보존 기간은 30-730일 사이여야 합니다."
+  }
+}
+
+variable "create_diagnostic_storage_account" {
+  description = "진단용 Storage Account 생성 여부"
+  type        = bool
+  default     = false
+}
+
+variable "diagnostic_storage_account_name" {
+  description = "진단용 Storage Account 이름"
+  type        = string
+  default     = null
+}
+
+variable "create_diagnostic_action_group" {
+  description = "진단용 Action Group 생성 여부"
+  type        = bool
+  default     = false
+}
+
+variable "diagnostic_action_group_name" {
+  description = "진단용 Action Group 이름"
+  type        = string
+  default     = "diagnostic-action-group"
+}
+
