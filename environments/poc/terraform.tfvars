@@ -1,4 +1,4 @@
-# Windows Server 2022 Datacenter CI/CD 서버 스펙 설정 - poc
+# Windows Server 2022 Datacenter CI/CD 서버 스펙 설정
 # 코드 컴파일과 Docker 이미지 빌드를 위한 고성능 구성
 
 # ========================================
@@ -20,9 +20,8 @@ use_existing_resource_group = true
 existing_resource_group_name = "rg-az01-poc-hyundai.teams-01"
 
 # 기존 네트워킹 리소스 이름으로 설정
-existing_vnet_name = "ict-dev-kttranslator-vnet-kc"
+existing_vnet_name = "ict-poc-kttranslator-vnet-kc"
 existing_subnet_name = "subnet-computing"
-# existing_nsg_name은 하단 환경별 NSG 설정에서 정의
 
 # ========================================
 # VM 설정 - Windows Server 2022 CI/CD 서버 스펙
@@ -33,14 +32,14 @@ vm_name_prefix = "ict-poc-kttranslator-cicivm01-kc"
 windows_vm_names = ["ict-poc-kttranslator-winvm01-kc"]
 linux_vm_names = ["ict-poc-kttranslator-linuxvm01-kc"]
 
-create_windows_vm = true  # 테스트용으로 비활성화
+create_windows_vm = true
 create_linux_vm = true
 windows_vm_count = 1
 linux_vm_count = 1
 
 # VM 크기 및 스토리지 - 고성능 스펙
-windows_vm_size = "Standard_D4s_v3"  # 4 vCPU, 16 GiB RAM
-linux_vm_size = "Standard_D4s_v3"    # 4 vCPU, 16 GiB RAM (Linux도 동일 스펙)
+windows_vm_size = "Standard_D2s_v3"  # 4 vCPU, 16 GiB RAM
+linux_vm_size = "Standard_D2s_v3"    # 4 vCPU, 16 GiB RAM (Linux도 동일 스펙)
 windows_storage_account_type = "Premium_LRS"  # Premium SSD
 linux_storage_account_type = "Premium_LRS"    # Premium SSD
 
@@ -50,14 +49,12 @@ os_disk_size_gb = 128
 # 데이터 디스크 설정 - 사용하지 않음
 
 # 관리자 계정
-admin_username = "cjs"
+admin_username = "azureuser"
 admin_password = "1q2w3e4r####"  # 필수: 최소 12자 이상
 
 # ========================================
 # 네트워킹 설정 - 기존 인프라 활용
 # ========================================
-# 기존 NSG 사용 (이름으로 지정 가능)
-# existing_nsg_name = "your-existing-nsg-name"
 
 # ========================================
 # 이미지 설정 - Windows Server 2022 Datacenter
@@ -76,123 +73,12 @@ linux_vm_image_sku = "server"
 linux_vm_image_version = "latest"
 
 # ========================================
-# Azure CLI 및 도구 설치 설정
+# 고급 설정
 # ========================================
-install_azure_cli = false  # VM 생성 시 Azure CLI, .NET SDK, Docker 자동 설치 (비활성화 - Custom Script Extension만 사용)
+enable_boot_diagnostics = true
 
-# ========================================
-# 사용자 정의 스크립트 설정 (테스트용)
-# ========================================
-# Custom Script Extension 테스트용 스크립트 (Base64 인코딩 방식)
-# install-linux.sh 파일 내용을 Custom Script Extension으로 실행
-custom_script_linux = <<-EOT
-#!/bin/bash
-# Linux VM 초기 설정 스크립트 (Bash)
-# Azure CLI, Docker 및 개발 도구 설치
-# VM 생성 시 자동 실행되는 스크립트
-
-# 로그 파일 설정
-LOG_FILE="/var/log/vm-setup.log"
-TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
-
-# 로그 함수
-log() {
-    echo "[$TIMESTAMP] $1" | tee -a "$LOG_FILE"
-}
-
-log "Linux VM 초기 설정 시작"
-
-# 시스템 업데이트
-log "시스템 패키지 업데이트 중..."
-apt-get update -y
-
-# 필수 패키지 설치
-log "필수 패키지 설치 중..."
-apt-get install -y curl apt-transport-https lsb-release gnupg
-
-# Microsoft GPG 키 추가
-log "Microsoft GPG 키 추가 중..."
-curl -sL https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor | tee /etc/apt/trusted.gpg.d/microsoft.gpg > /dev/null
-
-# Azure CLI 리포지토리 추가
-log "Azure CLI 리포지토리 추가 중..."
-AZ_REPO=$(lsb_release -cs)
-echo "deb [arch=amd64] https://packages.microsoft.com/repos/azure-cli/ $AZ_REPO main" | tee /etc/apt/sources.list.d/azure-cli.list
-
-# 패키지 목록 업데이트
-log "패키지 목록 업데이트 중..."
-apt-get update -y
-
-# Azure CLI 설치
-log "Azure CLI 설치 중..."
-apt-get install -y azure-cli
-
-# Azure CLI 버전 확인
-log "Azure CLI 설치 확인 중..."
-if command -v az &> /dev/null; then
-    AZ_VERSION=$(az version --output tsv 2>/dev/null | head -n1)
-    log "Azure CLI 설치 성공: $AZ_VERSION"
-else
-    log "Azure CLI 설치 실패"
-fi
-
-# 추가 도구 설치
-log "추가 도구 설치 중..."
-apt-get install -y git wget curl unzip jq
-
-# Docker 설치 (선택적)
-log "Docker 설치 중..."
-curl -fsSL https://get.docker.com -o get-docker.sh
-sh get-docker.sh
-usermod -aG docker $USER
-
-# 시스템 서비스 활성화
-log "시스템 서비스 설정 중..."
-systemctl enable docker
-systemctl start docker
-
-# 정리 작업
-log "정리 작업 중..."
-apt-get autoremove -y
-apt-get autoclean
-
-log "모든 설치 작업 완료"
-
-# 설치 완료 마커 파일 생성
-touch /tmp/vm-setup-complete
-
-log "VM 초기 설정 스크립트 종료"
-EOT
-
-# 사용자 정의 스크립트 비활성화 - Custom Script Extension만 사용
-custom_script_windows = ""
-
-# ========================================
-# 관리 ID 설정
-# ========================================
-enable_managed_identity = true
-managed_identity_type = "SystemAssigned"
-
-# VM 관리 ID에 할당할 역할들
-role_assignments = {
-  "custom_teams_ai_role" = {
-    role_definition_name = "Custom-Role-poc-Teams-AI"
-    scope               = "/subscriptions/d69e62aa-ef39-4bc0-b745-57ebc2bddcc8/resourceGroups/rg-az01-poc-hyundai.teams-01"
-  }
-  "storage_access" = {
-    role_definition_name = "Storage Blob Data Contributor"
-    scope               = "/subscriptions/d69e62aa-ef39-4bc0-b745-57ebc2bddcc8/resourceGroups/rg-az01-poc-hyundai.teams-01"
-  }
-}
-
-# ========================================
-# 진단 설정 (Diagnostic Settings)
-# ========================================
-enable_diagnostic_settings = true  # VM 진단 설정 활성화
-
-# 기존 Log Analytics Workspace 사용
-log_analytics_workspace_name = "ict-poc-kttranslator-law-kc"
-log_analytics_resource_group_name = "rg-az01-poc-hyundai.teams-01"
+# VM 확장 설치
+install_vm_extensions = true
 
 # ========================================
 # 네트워크 설정 (poc 환경)
@@ -206,11 +92,10 @@ public_ip_sku = "Standard"
 
 # 서브넷 설정 (기존 사용)
 use_existing_subnet = true
-existing_subnet_name = "subnet-computing"
 
 # NSG 설정 (환경별)
 use_existing_nsg = true
-existing_nsg_name = "ict-dev-kttranslator-management-nsg-kc"  # POC: Management NSG
+existing_nsg_name = "ict-poc-kttranslator-compute-nsg-kc"
 associate_subnet_nsg = true
 
 # ========================================
@@ -220,18 +105,12 @@ enable_diagnostic_settings = true
 use_existing_log_analytics_workspace = true
 log_analytics_workspace_name = "ict-poc-kttranslator-law-kc"
 log_analytics_resource_group_name = "rg-az01-poc-hyundai.teams-01"
-log_analytics_retention_days = 60  # POC는 더 긴 보존 기간
+log_analytics_retention_days = 30
 
-# 진단용 Storage Account 생성 (POC는 활성화)
-create_diagnostic_storage_account = true
-diagnostic_storage_account_name = "stpocdiagnostic${random_string.suffix.result}"
+# 진단용 Storage Account 생성 (선택적)
+create_diagnostic_storage_account = false
 
-# 진단용 Action Group 생성 (POC는 활성화)
-create_diagnostic_action_group = true
-diagnostic_action_group_name = "poc-diagnostic-action-group"
+# 진단용 Action Group 생성 (선택적)
+create_diagnostic_action_group = false
 
 
-# ========================================
-# 고급 설정
-# ========================================
-enable_boot_diagnostics = true
