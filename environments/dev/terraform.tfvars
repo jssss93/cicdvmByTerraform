@@ -54,7 +54,7 @@ data_disk_caching = "ReadWrite"
 data_disk_lun = 0
 
 # 관리자 계정
-admin_username = "cjs"
+admin_username = "azureuser"
 admin_password = "1q2w3e4r####"  # 강력한 비밀번호 설정
 
 # ========================================
