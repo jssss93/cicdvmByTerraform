@@ -9,11 +9,11 @@ location = "Korea Central"
 
 # 공통 태그
 common_tags = {
-  CostCenter  = "KT AXD"
-  Environment = "dev"
-  ManagedBy   = "Terraform"
-  Owner       = "JongsuChoi"
   Project     = "hyundai-teams-meeting-ai-translator-cicd"
+  Environment = "dev"
+  Owner       = "JongsuChoi"
+  ManagedBy   = "Terraform"
+  CostCenter  = "KT AXD"
 }
 
 use_existing_resource_group = true
@@ -37,11 +37,11 @@ create_linux_vm = true
 windows_vm_count = 1
 linux_vm_count = 1
 
-# VM 크기 및 스토리지 - 고성능 스펙
-windows_vm_size = "Standard_D2s_v3"  # 4 vCPU, 16 GiB RAM
-linux_vm_size = "Standard_D2s_v3"    # 4 vCPU, 16 GiB RAM (Linux도 동일 스펙)
-windows_storage_account_type = "Premium_LRS"  # Premium SSD
-linux_storage_account_type = "Premium_LRS"    # Premium SSD
+# VM 크기 및 스토리지 - 비용 최적화 스펙
+windows_vm_size = "Standard_D2s_v3"  # 2 vCPU, 8 GiB RAM
+linux_vm_size = "Standard_D2s_v3"    # 2 vCPU, 8 GiB RAM (Linux도 동일 스펙)
+windows_storage_account_type = "Standard_LRS"  # Standard SSD
+linux_storage_account_type = "Standard_LRS"    # Standard SSD
 
 # OS 디스크 크기 - 128 GiB
 os_disk_size_gb = 128
