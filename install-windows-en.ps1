@@ -76,13 +76,29 @@ try {
     # Configure GitHub Actions Runner automatically
     Write-Log "Configuring GitHub Actions Runner..."
     try {
+        # GitHub Enterprise Cloud 환경 설정
+        $ORG = "axd-project-hyundai"
+        $GITHUB_URL = "https://api.github.com"
+        $GITHUB_PAT = ""
+        
+        # 토큰 생성 테스트
+        Write-Log "GitHub Runner 등록 토큰 생성 중..."
+        $tokenResponse = Invoke-RestMethod -Uri "https://api.github.com/orgs/$ORG/actions/runners/registration-token" -Method Post -Headers @{
+            "Accept" = "application/vnd.github+json"
+            "Authorization" = "Bearer $GITHUB_PAT"
+            "X-GitHub-Api-Version" = "2022-11-28"
+        }
+        
+        $RUNNER_TOKEN = $tokenResponse.token
+        Write-Log "새 Runner 토큰: $RUNNER_TOKEN"
+        
         # Configure the runner with the provided settings
         $configArgs = @(
             "--url", "https://github.com/axd-project-hyundai",
-            "--token", "BW3MT6RPONHOQG3G4DQO263I2ZH6C",
+            "--token", $RUNNER_TOKEN,
             "--name", "windows-runner-01",
             "--runnergroup", "Default",
-            "--labels", "windows,self-hosted,x64,windows-server-2022",
+            "--labels", "windows,self-hosted,windows-server-2022,x64",
             "--work", "_work",
             "--unattended",
             "--replace"
@@ -464,25 +480,25 @@ try {
     Write-Log "Docker may need manual configuration on Windows Server"
 }
 
-# GitHub Actions Runner 서비스 설정 (이미 Stage1에서 설치됨)
-Write-Log "Configuring GitHub Actions Runner as Windows Service..."
+# GitHub Actions Runner 서비스 상태 확인 (이미 Stage1에서 설치됨)
+Write-Log "Checking GitHub Actions Runner service status..."
 try {
-    $runnerPath = "C:\actions-runner"
-    if (Test-Path $runnerPath) {
-        Set-Location $runnerPath
-        
-        # Install as Windows Service (this will auto-start on boot)
-        & ".\svc.cmd" install --runAsService
-        if ($LASTEXITCODE -eq 0) {
-            Write-Log "GitHub Actions Runner service installed successfully"
-        } else {
-            Write-Log "Error installing GitHub Actions Runner service. Exit code: $LASTEXITCODE"
+    $serviceName = "GitHubActionsRunner"
+    $existingService = Get-Service -Name $serviceName -ErrorAction SilentlyContinue
+    if ($existingService) {
+        Write-Log "GitHub Actions Runner service found: $($existingService.Status)"
+        if ($existingService.Status -ne "Running") {
+            Write-Log "Starting GitHub Actions Runner service..."
+            Start-Service -Name $serviceName
+            Start-Sleep -Seconds 3
+            $service = Get-Service -Name $serviceName
+            Write-Log "Service status after start: $($service.Status)"
         }
     } else {
-        Write-Log "GitHub Actions Runner directory not found - may not have been installed in Stage1"
+        Write-Log "GitHub Actions Runner service not found - may not have been installed in Stage1"
     }
 } catch {
-    Write-Log "Error configuring GitHub Actions Runner service: $($_.Exception.Message)"
+    Write-Log "Error checking GitHub Actions Runner service: $($_.Exception.Message)"
 }
 
 # Verify

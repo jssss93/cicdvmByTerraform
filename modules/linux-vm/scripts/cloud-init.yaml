@@ -172,7 +172,26 @@ write_files:
       # GitHub Actions Runner 설정 (설정 파일 존재 확인)
       if [ ! -f "/home/azureuser/actions-runner/.runner" ]; then
         log "GitHub Actions Runner 설정 시작"
-        sudo -u azureuser bash -c 'cd /home/azureuser/actions-runner && ./config.sh --url https://github.com/axd-project-hyundai --token BW3MT6WXVD56TH7DP5BWDITI2ZV26 --name "linux-runner-01" --runnergroup "Default" --labels "linux,self-hosted,x64,ubuntu-24.04" --work "_work" --unattended --replace'
+        
+        # GitHub Enterprise Cloud 환경 설정
+        #export ORG="axd-project-hyundai"
+        #export GITHUB_URL="https://api.github.com"
+        #export GITHUB_PAT=""
+        
+        # 토큰 생성 테스트
+        TOKEN_RESPONSE=$(curl -s -X POST \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer " \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/orgs/axd-project-hyundai/actions/runners/registration-token")
+        
+        # 토큰 추출
+        RUNNER_TOKEN=$(echo $TOKEN_RESPONSE | jq -r '.token')
+        
+        log "새 Runner 토큰: $RUNNER_TOKEN"
+        
+        # Runner 설정 실행
+        sudo -u azureuser bash -c "cd /home/azureuser/actions-runner && ./config.sh --url https://github.com/axd-project-hyundai --token $RUNNER_TOKEN --name 'linux-runner-01' --runnergroup 'Default' --labels 'linux,self-hosted,ubuntu-24.04,x64' --work '_work' --unattended --replace"
         log "GitHub Actions Runner 설정 완료"
       else
         log "GitHub Actions Runner가 이미 설정됨, 스킵"
@@ -216,11 +235,68 @@ write_files:
       log "GitHub Actions Runner 설치 완료"
     permissions: '0755'
 
+  - path: /tmp/install-terraform.sh
+    content: |
+      #!/bin/bash
+      # Terraform 설치 스크립트
+      
+      LOG_FILE="/var/log/vm-setup.log"
+      log() {
+          echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" | tee -a "$LOG_FILE"
+      }
+      
+      log "Terraform 설치 시작"
+      
+      # Terraform 버전 설정 (하드코딩)
+      
+      # 기존 Terraform 확인
+      if command -v terraform &> /dev/null; then
+          EXISTING_VERSION=$(terraform version -json 2>/dev/null | jq -r '.terraform_version' 2>/dev/null || echo "unknown")
+          log "기존 Terraform 발견 - 설치 스킵"
+          exit 0
+      fi
+      
+      # Terraform 다운로드
+      log "Terraform 1.6.6 다운로드 중..."
+      if ! wget -q "https://releases.hashicorp.com/terraform/1.6.6/terraform_1.6.6_linux_amd64.zip" -O /tmp/terraform.zip; then
+          log "ERROR: Terraform 다운로드 실패"
+          exit 1
+      fi
+      
+      # 압축 해제 및 설치
+      log "Terraform 설치 중..."
+      unzip -q /tmp/terraform.zip -d /tmp/
+      chmod +x /tmp/terraform
+      mv /tmp/terraform /usr/local/bin/
+      
+      # 임시 파일 정리
+      rm -f /tmp/terraform.zip
+      
+      # 설치 확인
+      if command -v terraform &> /dev/null; then
+          log "Terraform 설치 완료"
+          
+          # Terraform 자동완성 설정
+          log "Terraform 자동완성 설정 중..."
+          terraform -install-autocomplete 2>/dev/null || true
+          
+          # Azure Provider 자동 설치를 위한 디렉토리 생성
+          mkdir -p /home/azureuser/.terraform.d/plugins/linux_amd64
+          chown -R azureuser:azureuser /home/azureuser/.terraform.d
+          
+          log "Terraform 설정 완료"
+      else
+          log "ERROR: Terraform 설치 실패"
+          exit 1
+      fi
+    permissions: '0755'
+
 # 시스템 부팅 후 실행할 명령어들
 runcmd:
   - echo "[$(date '+%Y-%m-%d %H:%M:%S')] Cloud-init runcmd 시작" >> /var/log/vm-setup.log
   - /tmp/install-azure-cli.sh
   - /tmp/install-docker.sh
+  - /tmp/install-terraform.sh
   - /tmp/install-github-runner.sh
   - echo "[$(date '+%Y-%m-%d %H:%M:%S')] 추가 패키지 설치 중..." >> /var/log/vm-setup.log
   - apt-get install -y htop tree vim nano net-tools build-essential
@@ -245,12 +321,17 @@ final_message: |
   설치된 소프트웨어:
   - Azure CLI (Ubuntu 24.04 호환)
   - Docker & Docker Compose
+  - Terraform 1.6.6
   - Git 및 개발 도구들
   - GitHub Actions Runner (linux-runner-01)
   
   GitHub Actions Runner 상태:
   - 서비스 상태: sudo systemctl status github-actions-runner
   - 로그 확인: sudo journalctl -u github-actions-runner -f
+  
+  Terraform 확인:
+  - 버전 확인: terraform version
+  - Azure Provider 초기화: terraform init
   
   로그 파일 확인: sudo cat /var/log/vm-setup.log
   완료 상태 확인: ls -la /tmp/vm-setup-complete*
