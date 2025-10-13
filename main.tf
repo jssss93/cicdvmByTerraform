@@ -66,8 +66,8 @@ module "network" {
 
   # 공용 IP 설정
   create_public_ip                = var.create_public_ip
-  create_linux_pip               = var.create_linux_vm
-  create_windows_pip             = var.create_windows_vm
+  create_linux_pip               = var.create_linux_pip
+  create_windows_pip             = var.create_windows_pip
   public_ip_name_prefix          = var.public_ip_name_prefix
   public_ip_allocation_method    = var.public_ip_allocation_method
   public_ip_sku                  = var.public_ip_sku
@@ -86,12 +86,9 @@ module "network" {
   private_link_service_network_policies_enabled = var.private_link_service_network_policies_enabled
   subnet_service_delegations     = var.subnet_service_delegations
 
-  # NSG 설정
+  # NSG 설정 (기존 NSG 사용)
   use_existing_nsg               = var.use_existing_nsg
   existing_nsg_name              = var.existing_nsg_name
-  create_new_nsg                 = var.create_new_nsg
-  nsg_name                       = var.nsg_name
-  nsg_security_rules             = var.nsg_security_rules
   associate_subnet_nsg           = var.associate_subnet_nsg
 }
 

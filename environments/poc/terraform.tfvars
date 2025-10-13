@@ -17,11 +17,11 @@ common_tags = {
 }
 
 use_existing_resource_group = true
-existing_resource_group_name = "rg-az01-poc-hyundai.teams-01"
+existing_resource_group_name = "ict-poc-kttranslator-rg-kc"
 
 # 기존 네트워킹 리소스 이름으로 설정
 existing_vnet_name = "ict-poc-kttranslator-vnet-kc"
-existing_subnet_name = "subnet-computing"
+existing_subnet_name = "ict-poc-kttranslator-sbn-cicd-kc"
 
 # ========================================
 # VM 설정 - Windows Server 2022 CI/CD 서버 스펙
@@ -40,8 +40,8 @@ linux_vm_count = 1
 # VM 크기 및 스토리지 - 고성능 스펙
 windows_vm_size = "Standard_D2s_v3"  # 4 vCPU, 16 GiB RAM
 linux_vm_size = "Standard_D2s_v3"    # 4 vCPU, 16 GiB RAM (Linux도 동일 스펙)
-windows_storage_account_type = "Premium_LRS"  # Premium SSD
-linux_storage_account_type = "Premium_LRS"    # Premium SSD
+windows_storage_account_type = "Standard_LRS"  # Standard SSD
+linux_storage_account_type = "Standard_LRS"    # Standard SSD
 
 # OS 디스크 크기 - 128 GiB
 os_disk_size_gb = 128
@@ -84,7 +84,9 @@ install_vm_extensions = true
 # 네트워크 설정 (poc 환경)
 # ========================================
 # 공용 IP 설정
-create_public_ip = true
+create_public_ip = false
+create_linux_pip = false
+create_windows_pip = false
 # PIP는 VM별로 개별 생성됨 (Linux, Windows 각각)
 public_ip_name_prefix = "ict-poc-kttranslator-pip"
 public_ip_allocation_method = "Static"
@@ -95,7 +97,7 @@ use_existing_subnet = true
 
 # NSG 설정 (환경별)
 use_existing_nsg = true
-existing_nsg_name = "ict-poc-kttranslator-compute-nsg-kc"
+existing_nsg_name = "ict-poc-kttranslator-cicd-nsg-kc"
 associate_subnet_nsg = true
 
 # ========================================
@@ -104,7 +106,7 @@ associate_subnet_nsg = true
 enable_diagnostic_settings = true
 use_existing_log_analytics_workspace = true
 log_analytics_workspace_name = "ict-poc-kttranslator-law-kc"
-log_analytics_resource_group_name = "rg-az01-poc-hyundai.teams-01"
+log_analytics_resource_group_name = "ict-poc-kttranslator-rg-kc"
 log_analytics_retention_days = 30
 
 # 진단용 Storage Account 생성 (선택적)

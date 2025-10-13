@@ -86,11 +86,6 @@ variable "existing_subnet_name" {
   default     = null
 }
 
-variable "existing_nsg_name" {
-  description = "기존 Network Security Group 이름"
-  type        = string
-  default     = null
-}
 
 
 # ========================================
@@ -238,6 +233,18 @@ variable "create_public_ip" {
   default     = true
 }
 
+variable "create_linux_pip" {
+  description = "Linux VM용 공용 IP 생성 여부"
+  type        = bool
+  default     = true
+}
+
+variable "create_windows_pip" {
+  description = "Windows VM용 공용 IP 생성 여부"
+  type        = bool
+  default     = true
+}
+
 
 variable "public_ip_name_prefix" {
   description = "공용 IP 이름 접두사"
@@ -361,32 +368,10 @@ variable "use_existing_nsg" {
   default     = true
 }
 
-variable "create_new_nsg" {
-  description = "새 NSG 생성 여부"
-  type        = bool
-  default     = false
-}
-
-variable "nsg_name" {
-  description = "NSG 이름"
+variable "existing_nsg_name" {
+  description = "기존 NSG 이름"
   type        = string
-  default     = "nsg"
-}
-
-variable "nsg_security_rules" {
-  description = "NSG 보안 규칙 목록"
-  type = list(object({
-    name                       = string
-    priority                   = number
-    direction                  = string
-    access                     = string
-    protocol                   = string
-    source_port_range          = string
-    destination_port_range     = string
-    source_address_prefix      = string
-    destination_address_prefix = string
-  }))
-  default = []
+  default     = null
 }
 
 variable "associate_subnet_nsg" {

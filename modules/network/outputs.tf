@@ -127,35 +127,27 @@ output "subnet_address_prefix" {
 }
 
 # ========================================
-# NSG 출력
+# NSG 출력 (기존 NSG 사용)
 # ========================================
 output "nsg_ids" {
   description = "사용 중인 NSG ID 목록"
-  value = var.use_existing_nsg ? [data.azurerm_network_security_group.existing[0].id] : (
-    var.create_new_nsg ? [azurerm_network_security_group.main[0].id] : []
-  )
+  value = [data.azurerm_network_security_group.existing.id]
 }
 
 output "nsg_names" {
   description = "사용 중인 NSG 이름 목록"
-  value = var.use_existing_nsg ? [data.azurerm_network_security_group.existing[0].name] : (
-    var.create_new_nsg ? [azurerm_network_security_group.main[0].name] : []
-  )
+  value = [data.azurerm_network_security_group.existing.name]
 }
 
 # 단일 NSG 출력 (하위 호환성)
 output "nsg_id" {
   description = "사용 중인 NSG ID (하위 호환성)"
-  value = var.use_existing_nsg ? data.azurerm_network_security_group.existing[0].id : (
-    var.create_new_nsg ? azurerm_network_security_group.main[0].id : null
-  )
+  value = data.azurerm_network_security_group.existing.id
 }
 
 output "nsg_name" {
   description = "사용 중인 NSG 이름 (하위 호환성)"
-  value = var.use_existing_nsg ? data.azurerm_network_security_group.existing[0].name : (
-    var.create_new_nsg ? azurerm_network_security_group.main[0].name : null
-  )
+  value = data.azurerm_network_security_group.existing.name
 }
 
 # ========================================
@@ -178,9 +170,7 @@ output "network_configuration" {
     use_existing_subnet    = var.use_existing_subnet
     existing_subnet_name   = var.existing_subnet_name
     create_new_subnet      = var.create_new_subnet
-    use_existing_nsg       = var.use_existing_nsg
     existing_nsg_name      = var.existing_nsg_name
-    create_new_nsg         = var.create_new_nsg
     create_public_ip       = var.create_public_ip
     public_ip_count        = length(module.public_ip.public_ip_ids)
   }

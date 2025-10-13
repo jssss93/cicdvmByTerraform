@@ -21,7 +21,7 @@ existing_resource_group_name = "rg-az01-poc-hyundai.teams-01"
 
 # 기존 네트워킹 리소스 이름으로 설정
 existing_vnet_name = "ict-dev-kttranslator-vnet-kc"
-existing_subnet_name = "subnet-computing"
+existing_subnet_name = "ict-dev-kttranslator-sbn-cicd-kc"
 
 # ========================================
 # VM 설정 - Windows Server 2022 CI/CD 서버 스펙
@@ -85,47 +85,23 @@ install_vm_extensions = true
 # ========================================
 # 공용 IP 설정
 create_public_ip = true
+create_linux_pip = true
+create_windows_pip = true
 # PIP는 VM별로 개별 생성됨 (Linux, Windows 각각)
 public_ip_name_prefix = "ict-dev-kttranslator-pip"
 public_ip_allocation_method = "Static"
 public_ip_sku = "Standard"
 
-# 서브넷 설정 (기존 사용)
+# 서브넷 설정 (새로 생성)
 use_existing_subnet = true
+create_new_subnet = false
+subnet_name_prefix = "ict-dev-kttranslator-sbn-cicd-kc"
+subnet_address_prefixes = ["100.0.0.176/28"]
 
-# NSG 설정 (CI/CD용 새로 생성)
-use_existing_nsg = false
-create_new_nsg = true
-nsg_name = "ict-dev-kttranslator-cicd-nsg-kc"
+# NSG 설정 (기존 NSG 사용)
+use_existing_nsg = true
+existing_nsg_name = "ict-dev-kttranslator-compute-nsg-kc"
 associate_subnet_nsg = true
-
-# CI/CD용 NSG 보안 규칙 설정
-nsg_security_rules = [
-  {
-    name                       = "AllowHTTPS"
-    priority                   = 1030
-    direction                  = "Inbound"
-    access                     = "Allow"
-    protocol                   = "Tcp"
-    source_port_range          = "*"
-    destination_port_range     = "443"
-    source_address_prefix      = "*"
-    destination_address_prefix = "*"
-    description                = "Allow HTTPS for secure web services"
-  },
-  {
-    name                       = "AllowOutboundInternet"
-    priority                   = 2000
-    direction                  = "Outbound"
-    access                     = "Allow"
-    protocol                   = "*"
-    source_port_range          = "*"
-    destination_port_range     = "*"
-    source_address_prefix      = "*"
-    destination_address_prefix = "Internet"
-    description                = "Allow outbound internet access for CI/CD"
-  }
-]
 
 # ========================================
 # 진단 설정 (dev 환경)

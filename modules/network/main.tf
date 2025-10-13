@@ -29,9 +29,8 @@ data "azurerm_subnet" "existing" {
   resource_group_name  = var.resource_group_name
 }
 
-# 기존 NSG 참조
+# 기존 NSG 참조 (필수)
 data "azurerm_network_security_group" "existing" {
-  count               = var.use_existing_nsg ? 1 : 0
   name                = var.existing_nsg_name
   resource_group_name = var.resource_group_name
 }
@@ -87,38 +86,10 @@ resource "azurerm_subnet" "main" {
 }
 
 # ========================================
-# 네트워크 보안 그룹 생성 (새로 생성하는 경우)
-# ========================================
-resource "azurerm_network_security_group" "main" {
-  count               = var.create_new_nsg ? 1 : 0
-  name                = var.nsg_name
-  location            = data.azurerm_resource_group.existing.location
-  resource_group_name = data.azurerm_resource_group.existing.name
-
-  # 보안 규칙
-  dynamic "security_rule" {
-    for_each = var.nsg_security_rules
-    content {
-      name                       = security_rule.value.name
-      priority                   = security_rule.value.priority
-      direction                  = security_rule.value.direction
-      access                     = security_rule.value.access
-      protocol                   = security_rule.value.protocol
-      source_port_range          = security_rule.value.source_port_range
-      destination_port_range     = security_rule.value.destination_port_range
-      source_address_prefix      = security_rule.value.source_address_prefix
-      destination_address_prefix = security_rule.value.destination_address_prefix
-    }
-  }
-
-  tags = var.tags
-}
-
-# ========================================
-# 서브넷과 NSG 연결
+# 서브넷과 NSG 연결 (기존 NSG 사용)
 # ========================================
 resource "azurerm_subnet_network_security_group_association" "main" {
   count                     = var.associate_subnet_nsg ? 1 : 0
   subnet_id                 = var.use_existing_subnet ? data.azurerm_subnet.existing[0].id : azurerm_subnet.main[0].id
-  network_security_group_id = var.use_existing_nsg ? data.azurerm_network_security_group.existing[0].id : azurerm_network_security_group.main[0].id
+  network_security_group_id = data.azurerm_network_security_group.existing.id
 }
