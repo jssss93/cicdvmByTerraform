@@ -29,8 +29,7 @@ locals {
   common_tags = merge(var.common_tags, {
     Environment = var.environment
     Project     = var.project_name
-    CreatedBy   = "Terraform"
-    CreatedDate = timestamp()
+    ManagedBy   = "Terraform"
   })
 }
 
@@ -128,29 +127,13 @@ module "diagnostic" {
       "linux-vm" = {
         name        = "linux-vm-diagnostic"
         resource_id = module.linux_vm.linux_vm_ids[0]
-        enabled_logs = [
-          {
-            category         = "Administrative"
-            retention_enabled = true
-            retention_days   = var.log_analytics_retention_days
-          },
-          {
-            category         = "Security"
-            retention_enabled = true
-            retention_days   = var.log_analytics_retention_days
-          },
-          {
-            category         = "ServiceHealth"
-            retention_enabled = true
-            retention_days   = var.log_analytics_retention_days
-          }
-        ]
+        enabled_logs = []
         enabled_metrics = [
           {
             category         = "AllMetrics"
             enabled          = true
-            retention_enabled = true
-            retention_days   = var.log_analytics_retention_days
+            retention_enabled = false
+            retention_days   = 0
           }
         ]
       }
@@ -159,29 +142,13 @@ module "diagnostic" {
       "windows-vm" = {
         name        = "windows-vm-diagnostic"
         resource_id = module.windows_vm.windows_vm_ids[0]
-        enabled_logs = [
-          {
-            category         = "Administrative"
-            retention_enabled = true
-            retention_days   = var.log_analytics_retention_days
-          },
-          {
-            category         = "Security"
-            retention_enabled = true
-            retention_days   = var.log_analytics_retention_days
-          },
-          {
-            category         = "ServiceHealth"
-            retention_enabled = true
-            retention_days   = var.log_analytics_retention_days
-          }
-        ]
+        enabled_logs = []
         enabled_metrics = [
           {
             category         = "AllMetrics"
             enabled          = true
-            retention_enabled = true
-            retention_days   = var.log_analytics_retention_days
+            retention_enabled = false
+            retention_days   = 0
           }
         ]
       }
@@ -196,8 +163,8 @@ module "diagnostic" {
           {
             category         = "AllMetrics"
             enabled          = true
-            retention_enabled = true
-            retention_days   = var.log_analytics_retention_days
+            retention_enabled = false
+            retention_days   = 0
           }
         ]
       }

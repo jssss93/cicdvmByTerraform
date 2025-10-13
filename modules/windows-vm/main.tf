@@ -110,6 +110,12 @@ resource "azurerm_windows_virtual_machine" "main" {
   }
 
   tags = var.tags
+
+  lifecycle {
+    ignore_changes = [
+      vm_agent_platform_updates_enabled
+    ]
+  }
 }
 
 # Windows VM 데이터 디스크 - 사용하지 않음
