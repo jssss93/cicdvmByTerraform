@@ -66,12 +66,6 @@ resource "azurerm_subnet" "main" {
   virtual_network_name = data.azurerm_virtual_network.existing.name
   address_prefixes     = [var.subnet_address_prefixes[count.index]]
 
-  # 프라이빗 엔드포인트 네트워크 정책 설정
-  private_endpoint_network_policies_enabled = var.private_endpoint_network_policies_enabled
-  
-  # 프라이빗 링크 서비스 네트워크 정책 설정
-  private_link_service_network_policies_enabled = var.private_link_service_network_policies_enabled
-
   # 서브넷에 연결할 서비스 위임 (필요시)
   dynamic "delegation" {
     for_each = var.subnet_service_delegations
