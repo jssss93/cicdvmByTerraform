@@ -191,7 +191,7 @@ write_files:
         log "새 Runner 토큰: $RUNNER_TOKEN"
         
         # Runner 설정 실행
-        sudo -u azureuser bash -c "cd /home/azureuser/actions-runner && ./config.sh --url https://github.com/axd-project-hyundai --token $RUNNER_TOKEN --name 'linux-runner-01' --runnergroup 'Default' --labels 'linux,self-hosted,ubuntu-24.04,x64' --work '_work' --unattended --replace"
+        sudo -u azureuser bash -c "cd /home/azureuser/actions-runner && ./config.sh --url https://github.com/axd-project-hyundai --token $RUNNER_TOKEN --name '${github_runner_name}' --runnergroup 'Default' --labels 'linux,self-hosted,ubuntu-24.04,x64,${environment}' --work '_work' --unattended --replace"
         log "GitHub Actions Runner 설정 완료"
       else
         log "GitHub Actions Runner가 이미 설정됨, 스킵"

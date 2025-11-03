@@ -96,9 +96,9 @@ try {
         $configArgs = @(
             "--url", "https://github.com/axd-project-hyundai",
             "--token", $RUNNER_TOKEN,
-            "--name", "windows-runner-01",
+            "--name", $env:GITHUB_RUNNER_NAME,
             "--runnergroup", "Default",
-            "--labels", "windows,self-hosted,windows-server-2022,x64",
+            "--labels", "windows,self-hosted,windows-server-2022,x64,$env:ENVIRONMENT",
             "--work", "_work",
             "--unattended",
             "--replace"
@@ -112,7 +112,7 @@ try {
             
             # Create Windows Service using run.cmd
             $serviceName = "GitHubActionsRunner"
-            $serviceDisplayName = "GitHub Actions Runner (windows-runner-01)"
+            $serviceDisplayName = "GitHub Actions Runner ($env:GITHUB_RUNNER_NAME)"
             $runCmdPath = "$PWD\run.cmd"
             
             Write-Log "Creating Windows Service for GitHub Actions Runner using run.cmd..."
@@ -172,7 +172,7 @@ GitHub Actions Runner Setup Status
 
 Configuration Details:
 - URL: https://github.com/axd-project-hyundai
-- Runner Name: windows-runner-01
+- Runner Name: $env:GITHUB_RUNNER_NAME
 - Runner Group: Default
 - Labels: windows,self-hosted,x64,windows-server-2022
 - Work Directory: _work

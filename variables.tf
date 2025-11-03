@@ -681,3 +681,23 @@ variable "diagnostic_action_group_name" {
   default     = "diagnostic-action-group"
 }
 
+# GitHub Actions Runner 설정
+variable "linux_github_runner_name" {
+  description = "Linux GitHub Actions Runner 이름"
+  type        = string
+  default     = "linux-runner-01"
+}
+
+variable "windows_github_runner_name" {
+  description = "Windows GitHub Actions Runner 이름"
+  type        = string
+  default     = "windows-runner-01"
+}
+
+# Windows Custom Script Extension 설정
+variable "windows_custom_script_url" {
+  description = "Windows VM Custom Script Extension 스크립트 파일 URL (Blob Storage)"
+  type        = string
+  default     = ""
+}
+

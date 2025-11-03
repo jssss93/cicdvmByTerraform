@@ -226,6 +226,10 @@ module "linux_vm" {
   install_azure_cli   = var.install_azure_cli
   custom_script_linux = var.custom_script_linux
   
+  # GitHub Actions Runner 설정
+  github_runner_name = var.linux_github_runner_name
+  environment = var.environment
+  
   # 관리 ID 설정
   enable_managed_identity     = var.enable_managed_identity
   managed_identity_type       = var.managed_identity_type
@@ -286,6 +290,11 @@ module "windows_vm" {
   # Azure CLI 설치 설정
   install_azure_cli     = var.install_azure_cli
   custom_script_windows = var.custom_script_windows
+  windows_custom_script_url = var.windows_custom_script_url
+  
+  # GitHub Actions Runner 설정
+  github_runner_name = var.windows_github_runner_name
+  environment = var.environment
   
   # 관리 ID 설정
   enable_managed_identity     = var.enable_managed_identity

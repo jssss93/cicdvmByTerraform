@@ -26,7 +26,7 @@ existing_subnet_name = "ict-dev-kttranslator-sbn-cicd-kc"
 # ========================================
 # VM 설정 - Windows Server 2022 CI/CD 서버 스펙
 # ========================================
-vm_name_prefix = "ict-dev-kttranslator-cicivm01-kc"
+vm_name_prefix = "ict-dev-kttranslator-cicdvm01-kc"
 
 # VM 개별 이름 설정 (각 VM의 정확한 이름 지정)
 windows_vm_names = ["ict-dev-kttranslator-winvm01-kc"]
@@ -40,8 +40,8 @@ linux_vm_count = 1
 # VM 크기 및 스토리지 - 비용 최적화 스펙
 windows_vm_size = "Standard_D2s_v3"  # 2 vCPU, 8 GiB RAM
 linux_vm_size = "Standard_D2s_v3"    # 2 vCPU, 8 GiB RAM (Linux도 동일 스펙)
-windows_storage_account_type = "Standard_LRS"  # Standard SSD
-linux_storage_account_type = "Standard_LRS"    # Standard SSD
+windows_storage_account_type = "Standard_LRS"  # Standard HDD (비용 최적화)
+linux_storage_account_type = "Standard_LRS"    # Standard HDD (비용 최적화)
 
 # OS 디스크 크기 - 128 GiB
 os_disk_size_gb = 128
@@ -84,9 +84,9 @@ install_vm_extensions = true
 # 네트워크 설정 (dev 환경)
 # ========================================
 # 공용 IP 설정
-create_public_ip = true
-create_linux_pip = true
-create_windows_pip = true
+create_public_ip = false
+create_linux_pip = false
+create_windows_pip = false
 # PIP는 VM별로 개별 생성됨 (Linux, Windows 각각)
 public_ip_name_prefix = "ict-dev-kttranslator-pip"
 public_ip_allocation_method = "Static"
@@ -100,7 +100,7 @@ subnet_address_prefixes = ["100.0.0.176/28"]
 
 # NSG 설정 (기존 NSG 사용)
 use_existing_nsg = true
-existing_nsg_name = "ict-dev-kttranslator-compute-nsg-kc"
+existing_nsg_name = "ict-dev-kttranslator-cicd-nsg-kc"
 associate_subnet_nsg = true
 
 # ========================================
@@ -152,4 +152,10 @@ role_assignments = {
   }
 }
 
+# GitHub Actions Runner 설정
+linux_github_runner_name = "linux-runner-dev-01"
+windows_github_runner_name = "windows-runner-dev-01"
+
+# Windows Custom Script Extension 설정
+windows_custom_script_url = "https://ictdevkttranslatorst02kc.blob.core.windows.net/scripts/install-windows-en.ps1?se=2025-12-31T23%3A59%3A59Z&sp=r&spr=https&sv=2022-11-02&sr=b&sig=DQ9AEm19GpwFVXt7fSITGlwKQOOTgvuctK2IIH65s%2BI%3D"
 

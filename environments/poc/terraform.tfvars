@@ -115,4 +115,43 @@ create_diagnostic_storage_account = false
 # 진단용 Action Group 생성 (선택적)
 create_diagnostic_action_group = false
 
+# ========================================
+# VM 관리 ID 역할 할당 설정
+# ========================================
+enable_managed_identity = true
+managed_identity_type = "SystemAssigned"
 
+# VM 관리 ID에 할당할 역할들
+role_assignments = {
+  "storage-blob-data-contributor" = {
+    role_definition_name = "Storage Blob Data Contributor"
+    scope = "/subscriptions/75e3ba05-c5dc-4b32-8509-37204d22ae9c/resourceGroups/ict-poc-kttranslator-rg-kc"
+  }
+  "acr-pull" = {
+    role_definition_name = "AcrPull"
+    scope = "/subscriptions/75e3ba05-c5dc-4b32-8509-37204d22ae9c/resourceGroups/ict-poc-kttranslator-rg-kc"
+  }
+  "log-analytics-contributor" = {
+    role_definition_name = "Log Analytics Contributor"
+    scope = "/subscriptions/75e3ba05-c5dc-4b32-8509-37204d22ae9c/resourceGroups/ict-poc-kttranslator-rg-kc"
+  }
+  "monitoring-metrics-publisher" = {
+    role_definition_name = "Monitoring Metrics Publisher"
+    scope = "/subscriptions/75e3ba05-c5dc-4b32-8509-37204d22ae9c/resourceGroups/ict-poc-kttranslator-rg-kc"
+  }
+  "virtual-machine-contributor" = {
+    role_definition_name = "Virtual Machine Contributor"
+    scope = "/subscriptions/75e3ba05-c5dc-4b32-8509-37204d22ae9c/resourceGroups/ict-poc-kttranslator-rg-kc"
+  }
+  "network-contributor" = {
+    role_definition_name = "Network Contributor"
+    scope = "/subscriptions/75e3ba05-c5dc-4b32-8509-37204d22ae9c/resourceGroups/ict-poc-kttranslator-rg-kc"
+  }
+}
+
+# GitHub Actions Runner 설정
+linux_github_runner_name = "linux-runner-poc-01"
+windows_github_runner_name = "windows-runner-poc-01"
+
+# Windows Custom Script Extension 설정
+windows_custom_script_url = "https://ictpockttranslatorst02kc.blob.core.windows.net/scripts/install-windows-en.ps1?se=2025-12-31T23%3A59%3A59Z&sp=r&sv=2022-11-02&sr=b&sig=q5llmjI3Q8std%2F38ss77slNpck2O0UWnTEiIfYHFkoA%3D"

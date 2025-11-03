@@ -231,6 +231,19 @@ variable "role_assignments" {
   default = {}
 }
 
+# GitHub Actions Runner 설정
+variable "github_runner_name" {
+  description = "GitHub Actions Runner 이름"
+  type        = string
+  default     = "linux-runner-01"
+}
+
+variable "environment" {
+  description = "환경명 (dev, poc, prod 등)"
+  type        = string
+  default     = "dev"
+}
+
 # 태그
 variable "tags" {
   description = "리소스에 적용할 태그"

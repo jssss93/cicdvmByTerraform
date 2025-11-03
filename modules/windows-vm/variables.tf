@@ -196,6 +196,12 @@ variable "custom_script_windows" {
   default     = ""
 }
 
+variable "windows_custom_script_url" {
+  description = "Windows VM Custom Script Extension 스크립트 파일 URL (Blob Storage)"
+  type        = string
+  default     = ""
+}
+
 # 관리 ID 설정
 variable "enable_managed_identity" {
   description = "VM에 관리 ID 활성화 여부"
@@ -222,6 +228,19 @@ variable "role_assignments" {
     scope               = string
   }))
   default = {}
+}
+
+# GitHub Actions Runner 설정
+variable "github_runner_name" {
+  description = "GitHub Actions Runner 이름"
+  type        = string
+  default     = "windows-runner-01"
+}
+
+variable "environment" {
+  description = "환경명 (dev, poc, prod 등)"
+  type        = string
+  default     = "dev"
 }
 
 # 태그

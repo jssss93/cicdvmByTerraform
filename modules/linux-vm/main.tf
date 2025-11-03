@@ -37,6 +37,8 @@ locals {
   # Cloud-init 스크립트 생성
   cloud_init_script = var.install_azure_cli ? templatefile("${path.module}/scripts/cloud-init.yaml", {
     custom_script = var.custom_script_linux
+    github_runner_name = var.github_runner_name
+    environment = var.environment
   }) : null
 }
 
