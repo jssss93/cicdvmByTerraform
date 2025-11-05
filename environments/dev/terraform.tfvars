@@ -134,6 +134,10 @@ role_assignments = {
     role_definition_name = "AcrPull"
     scope = "/subscriptions/d69e62aa-ef39-4bc0-b745-57ebc2bddcc8/resourceGroups/rg-az01-poc-hyundai.teams-01"
   }
+  "acr-push" = {
+    role_definition_name = "AcrPush"
+    scope = "/subscriptions/d69e62aa-ef39-4bc0-b745-57ebc2bddcc8/resourceGroups/rg-az01-poc-hyundai.teams-01"
+  }
   "log-analytics-contributor" = {
     role_definition_name = "Log Analytics Contributor"
     scope = "/subscriptions/d69e62aa-ef39-4bc0-b745-57ebc2bddcc8/resourceGroups/rg-az01-poc-hyundai.teams-01"

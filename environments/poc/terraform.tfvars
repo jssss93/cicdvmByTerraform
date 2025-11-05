@@ -131,6 +131,10 @@ role_assignments = {
     role_definition_name = "AcrPull"
     scope = "/subscriptions/75e3ba05-c5dc-4b32-8509-37204d22ae9c/resourceGroups/ict-poc-kttranslator-rg-kc"
   }
+  "acr-push" = {
+    role_definition_name = "AcrPush"
+    scope = "/subscriptions/75e3ba05-c5dc-4b32-8509-37204d22ae9c/resourceGroups/ict-poc-kttranslator-rg-kc"
+  }
   "log-analytics-contributor" = {
     role_definition_name = "Log Analytics Contributor"
     scope = "/subscriptions/75e3ba05-c5dc-4b32-8509-37204d22ae9c/resourceGroups/ict-poc-kttranslator-rg-kc"
