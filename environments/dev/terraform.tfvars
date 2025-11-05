@@ -154,6 +154,10 @@ role_assignments = {
     role_definition_name = "Network Contributor"
     scope = "/subscriptions/d69e62aa-ef39-4bc0-b745-57ebc2bddcc8/resourceGroups/rg-az01-poc-hyundai.teams-01"
   }
+  "website-contributor" = {
+    role_definition_name = "Website Contributor"
+    scope = "/subscriptions/d69e62aa-ef39-4bc0-b745-57ebc2bddcc8/resourceGroups/rg-az01-poc-hyundai.teams-01"
+  }
 }
 
 # GitHub Actions Runner 설정

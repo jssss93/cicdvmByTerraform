@@ -151,6 +151,10 @@ role_assignments = {
     role_definition_name = "Network Contributor"
     scope = "/subscriptions/75e3ba05-c5dc-4b32-8509-37204d22ae9c/resourceGroups/ict-poc-kttranslator-rg-kc"
   }
+  "website-contributor" = {
+    role_definition_name = "Website Contributor"
+    scope = "/subscriptions/75e3ba05-c5dc-4b32-8509-37204d22ae9c/resourceGroups/ict-poc-kttranslator-rg-kc"
+  }
 }
 
 # GitHub Actions Runner 설정
